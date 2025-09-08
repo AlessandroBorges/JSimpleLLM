@@ -181,4 +181,25 @@ public class Chat {
 	public int size() {
 		return messageCount();
 	}
+
+	public void addSystemMessage(String system) {
+		Message m = new Message(MessageRole.SYSTEM, system);
+		addMessage(m);
+	}
+
+	public void addAssistantMessage(String assistant) {
+		Message m = new Message(MessageRole.ASSISTANT, assistant);
+		addMessage(m);
+	}
+
+	public void addDeveloperMessage(String developer) {
+		Message m = new Message(MessageRole.DEVELOPER, developer);
+		addMessage(m);
+	}
+
+	public void addUserMessage(String user) {
+		Message m = new Message(MessageRole.USER, user);
+		addMessage(m);
+	}
+
 }

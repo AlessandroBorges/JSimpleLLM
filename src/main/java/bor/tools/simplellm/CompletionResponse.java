@@ -68,7 +68,7 @@ public class CompletionResponse {
 	 * 
 	 * @see ContentWrapper
 	 */
-	private ContentWrapper response;
+	public ContentWrapper response;
 
 	/**
 	 * The reason why the response generation was terminated.
@@ -83,7 +83,7 @@ public class CompletionResponse {
 	 * </ul>
 	 * </p>
 	 */
-	private String endReason;
+	public String endReason;
 
 	/**
 	 * Additional metadata and information from the API response.

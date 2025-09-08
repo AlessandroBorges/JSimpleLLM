@@ -2,6 +2,8 @@ package bor.tools.simplellm;
 
 import java.util.List;
 
+import bor.tools.simplellm.LLMConfig.MODEL_TYPE;
+import bor.tools.simplellm.LLMConfig.Model;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.exceptions.LLMException;
 
@@ -25,13 +27,17 @@ import bor.tools.simplellm.exceptions.LLMException;
 public interface LLMService {
 
 	/**
-	 * Retrieves the list of available models from the LLM service.
+	 * Retrieves the list of available models from the LLM service, as provided to
+	 * LLMConfig.
 	 *
 	 * @return a list of model names available for use
 	 * 
 	 * @throws LLMException if there's an error retrieving the models
+	 * 
+	 * @see LLMConfig
+	 * @see Model
 	 */
-	List<String> models()
+	List<Model> models()
 	            throws LLMException;
 
 	/**
@@ -192,4 +198,36 @@ public interface LLMService {
 	 */
 	String sumarizeText(String text, String summaryPrompt, MapParam params)
 	            throws LLMException;
+
+	/**
+	 * Get the LLM configuration .
+	 * 
+	 * @return
+	 */
+	LLMConfig getLLMConfig();
+
+	/**
+	 * Checks if the specified model supports the given type of operation.
+	 * <p>
+	 * This method verifies whether a model is capable of performing tasks such as
+	 * completion, chat, or embeddings based on its configured types.
+	 * </p>
+	 *
+	 * @param modelName the name of the model to check
+	 * @param type      the type of operation to verify (e.g., COMPLETION, CHAT,
+	 *                  EMBEDDINGS)
+	 * 
+	 * @return true if the model supports the specified type, false otherwise
+	 * 
+	 * @see LLMConfig.MODEL_TYPE
+	 */
+	default boolean isModelType(String modelName, MODEL_TYPE type) {
+		LLMConfig config = getLLMConfig();
+		Model     model  = config.getModelMap().get(modelName);
+		if (model != null) {
+			return model.getTypes().contains(type);
+		}
+		return false;
+	}
+
 }

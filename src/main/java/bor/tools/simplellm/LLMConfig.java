@@ -161,7 +161,7 @@ public class LLMConfig {
 		 * 
 		 * @see MODEL_TYPE
 		 */
-		List<MODEL_TYPE> type;
+		List<MODEL_TYPE> types;
 
 		/**
 		 * The maximum context length supported by this model.
@@ -185,7 +185,7 @@ public class LLMConfig {
 		 * </p>
 		 */
 		public Model() {
-			type = new ArrayList<>(2);
+			types = new ArrayList<>(2);
 		}
 
 		/**
@@ -201,15 +201,19 @@ public class LLMConfig {
 		 * 
 		 * @see MODEL_TYPE
 		 */
-		public Model(String name, Integer contextLength, MODEL_TYPE... types) {
+		public Model(String name, Integer contextLength, MODEL_TYPE... model_types) {
 			this();
 			this.name = name;
 			this.contextLength = contextLength;
 			if (types != null) {
-				for (var mt : types) {
-					type.add(mt);
+				for (var mt : model_types) {
+					types.add(mt);
 				}
 			}
+		}
+
+		public List<MODEL_TYPE> getTypes() { // TODO Auto-generated method stub
+			return this.types;
 		}
 	}
 }
