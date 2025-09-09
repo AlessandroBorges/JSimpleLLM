@@ -104,4 +104,29 @@ public class CompletionResponse {
 	 * </p>
 	 */
 	private Map<String, Object> info;
+
+	/**
+	 * Retrieves the text content from the response if available.
+	 * <p>
+	 * This method checks if the response is not null and if its type is TEXT.
+	 * If both conditions are met, it returns the text content; otherwise, it
+	 * returns null.
+	 * </p>
+	 * 
+	 * @return the text content of the response, or null if not applicable
+	 */
+	public String getText() {
+		if (this.response != null && this.response.getType() == ContentType.TEXT) {
+			return response.getText();
+		}
+		return null;
+	}
+
+	/**
+	 * Retrieves the raw content from the response.
+	 * 
+	 * @return
+	 */
+	public Object getContent() { return this.response != null ? this.response.getContent() : null; }
+
 }

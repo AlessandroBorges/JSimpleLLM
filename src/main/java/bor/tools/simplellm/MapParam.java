@@ -11,6 +11,10 @@ public class MapParam extends LinkedHashMap<String, Object> {
 		super();
 	}
 
+	public MapParam(MapParam other) {
+		super(other);
+	}
+
 	// Getters/setters tipados para parâmetros comuns
 	public MapParam temperature(Double value) {
 		put("temperature", value);
@@ -22,15 +26,41 @@ public class MapParam extends LinkedHashMap<String, Object> {
 		return this;
 	}
 
+	/**
+	 * Sets the model to be used. This is a required parameter for most LLMs.
+	 * 
+	 * @param value the model name
+	 * 
+	 * @return this
+	 */
 	public MapParam model(String value) {
 		put("model", value);
 		return this;
 	}
 
+	/**
+	 * Returns temperature if set, otherwise null.
+	 * 
+	 * @return
+	 */
 	public Double getTemperature() { return (Double) get("temperature"); }
 
-	public Integer getMaxTokens() { return (Integer) get("max_tokens"); }
+	/**
+	 * Returns max_tokens if set, otherwise max_content_tokens.
+	 * 
+	 * @return max_tokens or max_content_tokens
+	 */
+	public Integer getMaxTokens() {
+		Object v = get("max_tokens") == null ? get("max_content_tokens") : get("max_tokens");
+		return (Integer) v;
 
+	}
+
+	/**
+	 * Returns model if set, otherwise null.
+	 * 
+	 * @return model
+	 */
 	public String getModel() { return (String) get("model"); }
 
 	/**

@@ -1,35 +1,68 @@
 # JSimpleLLM Test Suite
 
-Este diretório contém testes abrangentes para a implementação OpenAI do JSimpleLLM.
+Este diretório contém testes abrangentes para as implementações OpenAI e Ollama do JSimpleLLM.
 
 ## Configuração dos Testes
 
 ### Pré-requisitos
 
+#### Para Testes OpenAI
 1. **Token da API OpenAI**: Os testes de integração requerem uma chave válida da API OpenAI.
 2. **Java 17+**: Os testes foram desenvolvidos para Java 17.
 3. **Maven**: Para executar os testes.
 
-### Configuração da Variável de Ambiente
+#### Para Testes Ollama
+1. **Servidor Ollama**: Os testes requerem um servidor Ollama rodando localmente.
+2. **Modelos instalados**: Pelo menos um modelo deve estar instalado (ex: phi3.5, llama3.2).
+3. **Porta 11434**: O servidor Ollama deve estar acessível em localhost:11434.
 
-Defina a variável de ambiente `OPENAI_API_TOKEN` com sua chave da API:
+### Configuração das Variáveis de Ambiente
+
+#### Para OpenAI
+Defina a variável de ambiente `OPENAI_API_KEY` com sua chave da API:
 
 ```bash
 # Linux/Mac
-export OPENAI_API_TOKEN=your_openai_api_key_here
+export OPENAI_API_KEY=your_openai_api_key_here
 
 # Windows
-set OPENAI_API_TOKEN=your_openai_api_key_here
+set OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-**Importante**: Se a variável `OPENAI_API_TOKEN` não estiver definida, os testes de integração serão automaticamente ignorados (skipped).
+#### Para Ollama
+```bash
+# Linux/Mac (opcional - usa "ollama" por padrão)
+export OLLAMA_API_KEY=ollama
+
+# Windows (opcional)
+set OLLAMA_API_KEY=ollama
+```
+
+#### Configuração do Servidor Ollama
+```bash
+# Instalar Ollama (Linux/Mac)
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Baixar um modelo (exemplo)
+ollama pull phi3.5
+ollama pull llama3.2
+
+# Iniciar servidor (geralmente inicia automaticamente)
+ollama serve
+```
+
+**Importante**: 
+- Se `OPENAI_API_KEY` não estiver definida, os testes OpenAI serão ignorados
+- Se o servidor Ollama não estiver rodando, os testes Ollama serão ignorados
 
 ## Classes de Teste
 
-### 1. `OpenAILLMServiceTestBase`
-Classe base que fornece configuração comum para todos os testes.
+### Testes OpenAI
 
-### 2. `OpenAICompletionTest`
+#### 1. `OpenAILLMServiceTestBase`
+Classe base que fornece configuração comum para todos os testes OpenAI.
+
+#### 2. `OpenAICompletionTest`
 Testa a funcionalidade de completion:
 - Completions básicos com system prompts
 - Completions sem system prompts
@@ -61,13 +94,39 @@ Testa configuração e gerenciamento de modelos:
 - Autenticação
 - Capacidades dos modelos
 
-### 6. `OpenAIIntegrationTest`
+#### 6. `OpenAIIntegrationTest`
 Testes de integração completos:
 - Fluxo completo de conversa
 - Tratamento de erros
 - Performance e metadados
 - Comparação entre modelos
 - Casos extremos
+
+### Testes Ollama
+
+#### 1. `OllamaLLMServiceTestBase`
+Classe base que fornece configuração comum para todos os testes Ollama.
+
+#### 2. `OllamaCompletionTest`
+Testa a funcionalidade de completion com Ollama:
+- Completions básicos com modelos locais
+- Uso do factory pattern
+- Configuração específica do Ollama
+- Tratamento de erros
+
+#### 3. `OllamaChatTest`
+Testa a funcionalidade de chat com Ollama:
+- Conversas multi-turn
+- Preservação de contexto
+- Assistência de programação
+- Chat sem consultas adicionais
+
+#### 4. `OllamaIntegrationTest`
+Testes de integração completos para Ollama:
+- Conectividade com servidor local
+- Listagem de modelos instalados
+- Compatibilidade com API OpenAI
+- Performance com modelos locais
 
 ## Executando os Testes
 
@@ -77,21 +136,41 @@ mvn test
 ```
 
 ### Executar Testes Específicos
+
+#### Testes OpenAI
 ```bash
-# Apenas testes de completion
+# Apenas testes de completion OpenAI
 mvn test -Dtest=OpenAICompletionTest
 
-# Apenas testes de chat
+# Apenas testes de chat OpenAI
 mvn test -Dtest=OpenAIChatTest
 
-# Apenas testes de embeddings
+# Apenas testes de embeddings OpenAI
 mvn test -Dtest=OpenAIEmbeddingsTest
 
-# Apenas testes de configuração
+# Apenas testes de configuração OpenAI
 mvn test -Dtest=OpenAIConfigTest
 
-# Apenas testes de integração
+# Apenas testes de integração OpenAI
 mvn test -Dtest=OpenAIIntegrationTest
+
+# Todos os testes OpenAI
+mvn test -Dtest=OpenAI*
+```
+
+#### Testes Ollama
+```bash
+# Apenas testes de completion Ollama
+mvn test -Dtest=OllamaCompletionTest
+
+# Apenas testes de chat Ollama
+mvn test -Dtest=OllamaChatTest
+
+# Apenas testes de integração Ollama
+mvn test -Dtest=OllamaIntegrationTest
+
+# Todos os testes Ollama
+mvn test -Dtest=Ollama*
 ```
 
 ### Executar com Logs Detalhados

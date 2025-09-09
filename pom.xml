@@ -45,6 +45,13 @@
 			<version>4.12.0</version>
 		</dependency>
 
+		<!-- JTokkit for OpenAI-compatible token counting -->
+		<dependency>
+			<groupId>com.knuddels</groupId>
+			<artifactId>jtokkit</artifactId>
+			<version>1.1.0</version>
+		</dependency>
+
 		<!-- Test Dependencies -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>

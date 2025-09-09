@@ -1,12 +1,15 @@
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/MapParam.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/CompletionResponse.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/ToolsConfig.java
+/mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/MapModels.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/chat/ChatPersistence.java
+/mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/Model.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/ContentType.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/LLMService.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/chat/ChatManager.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/chat/package-info.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/impl/package-info.java
+/mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/impl/StreamingUtil.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/LLMServiceFactory.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/exceptions/LLMRateLimitException.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/exceptions/LLMNetworkException.java
@@ -20,7 +23,10 @@
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/ResponseStream.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/chat/MessageRole.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/exceptions/LLMTimeoutException.java
+/mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/impl/OllamaLLMService.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/impl/OpenAIJsonMapper.java
+/mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/impl/LMStudioLLMService.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/exceptions/LLMException.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/chat/Chat.java
+/mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/VecUtil.java
 /mnt/f/1-ProjetosIA/github/JSimpleLLM/src/main/java/bor/tools/simplellm/exceptions/package-info.java

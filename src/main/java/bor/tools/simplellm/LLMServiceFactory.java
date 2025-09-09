@@ -1,5 +1,7 @@
 package bor.tools.simplellm;
 
+import bor.tools.simplellm.impl.LMStudioLLMService;
+import bor.tools.simplellm.impl.OllamaLLMService;
 import bor.tools.simplellm.impl.OpenAILLMService;
 
 /**
@@ -18,6 +20,8 @@ import bor.tools.simplellm.impl.OpenAILLMService;
  * Currently supports:
  * <ul>
  * <li>OpenAI API-compatible services - OpenAILLMService</li>
+ * <li>Ollama local server - OllamaLLMService</li>
+ * <li>LM Studio local server - LMStudioLLMService</li>
  * </ul>
  * </p>
  * <p>
@@ -63,6 +67,102 @@ public class LLMServiceFactory {
 	 */
 	public static LLMService createOpenAI(LLMConfig config) {
 		return new OpenAILLMService(config);
+	}
+
+	/**
+	 * Creates an instance of Ollama local LLM service.
+	 * <p>
+	 * This method instantiates an Ollama LLM service implementation that can be used
+	 * to interact with a local Ollama server. Ollama provides a local server that runs
+	 * various open-source LLM models with an OpenAI-compatible API.
+	 * </p>
+	 * <p>
+	 * Default configuration:
+	 * <ul>
+	 * <li>Base URL: http://localhost:11434/v1/</li>
+	 * <li>API Key: "ollama" (or OLLAMA_API_KEY environment variable)</li>
+	 * <li>Default models: phi3.5:latest, llama3.2:latest, etc.</li>
+	 * </ul>
+	 * </p>
+	 * 
+	 * @param config the LLM configuration containing Ollama API settings, model
+	 *               definitions, and service endpoints
+	 * 
+	 * @return a new {@link LLMService} instance configured for Ollama local server
+	 * 
+	 * @throws IllegalArgumentException if the provided config is null or contains
+	 *                                  invalid configuration parameters
+	 * 
+	 * @see LLMService
+	 * @see LLMConfig
+	 * @see OllamaLLMService
+	 */
+	public static LLMService createOllama(LLMConfig config) {
+		return new OllamaLLMService(config);
+	}
+
+	/**
+	 * Creates an instance of Ollama local LLM service with default configuration.
+	 * <p>
+	 * This is a convenience method that creates an Ollama service with pre-configured
+	 * settings suitable for most local Ollama installations.
+	 * </p>
+	 * 
+	 * @return a new {@link LLMService} instance with default Ollama configuration
+	 * 
+	 * @see #createOllama(LLMConfig)
+	 * @see OllamaLLMService#getDefaultOllamaLLMConfig()
+	 */
+	public static LLMService createOllama() {
+		return new OllamaLLMService();
+	}
+
+	/**
+	 * Creates an instance of LM Studio local LLM service.
+	 * <p>
+	 * This method instantiates an LM Studio LLM service implementation that can be used
+	 * to interact with a local LM Studio server. LM Studio provides a user-friendly
+	 * interface for running various open-source LLM models with an OpenAI-compatible API.
+	 * </p>
+	 * <p>
+	 * Default configuration:
+	 * <ul>
+	 * <li>Base URL: http://localhost:1234/v1/</li>
+	 * <li>API Key: "lm-studio" (or LMSTUDIO_API_KEY environment variable)</li>
+	 * <li>Models depend on what user has loaded in LM Studio UI</li>
+	 * </ul>
+	 * </p>
+	 * 
+	 * @param config the LLM configuration containing LM Studio API settings, model
+	 *               definitions, and service endpoints
+	 * 
+	 * @return a new {@link LLMService} instance configured for LM Studio local server
+	 * 
+	 * @throws IllegalArgumentException if the provided config is null or contains
+	 *                                  invalid configuration parameters
+	 * 
+	 * @see LLMService
+	 * @see LLMConfig
+	 * @see LMStudioLLMService
+	 */
+	public static LLMService createLMStudio(LLMConfig config) {
+		return new LMStudioLLMService(config);
+	}
+
+	/**
+	 * Creates an instance of LM Studio local LLM service with default configuration.
+	 * <p>
+	 * This is a convenience method that creates an LM Studio service with pre-configured
+	 * settings suitable for most local LM Studio installations.
+	 * </p>
+	 * 
+	 * @return a new {@link LLMService} instance with default LM Studio configuration
+	 * 
+	 * @see #createLMStudio(LLMConfig)
+	 * @see LMStudioLLMService#getDefaultLLMConfig()
+	 */
+	public static LLMService createLMStudio() {
+		return new LMStudioLLMService();
 	}
 
 	// Futuras implementações: createClaude(), createGemini(), etc.

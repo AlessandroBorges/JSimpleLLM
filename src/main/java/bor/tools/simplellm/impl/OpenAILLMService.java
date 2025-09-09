@@ -6,6 +6,10 @@ package bor.tools.simplellm.impl;
 import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.BATCH;
 import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.CODING;
 import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.EMBEDDING;
+import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.EMBEDDING_DIMENSION;
+import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.FAST;
+import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.GPT5_CLASS;
+import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.IMAGE;
 import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.LANGUAGE;
 import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.REASONING;
 import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.RESPONSES_API;
@@ -14,20 +18,26 @@ import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.VISION;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import com.knuddels.jtokkit.Encodings;
+import com.knuddels.jtokkit.api.Encoding;
+import com.knuddels.jtokkit.api.EncodingRegistry;
 
 import bor.tools.simplellm.CompletionResponse;
 import bor.tools.simplellm.ContentType;
 import bor.tools.simplellm.ContentWrapper;
 import bor.tools.simplellm.LLMConfig;
-import bor.tools.simplellm.LLMConfig.Model;
 import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.MapModels;
 import bor.tools.simplellm.MapParam;
+import bor.tools.simplellm.Model;
 import bor.tools.simplellm.ResponseStream;
 import bor.tools.simplellm.chat.Chat;
+import bor.tools.simplellm.chat.Message;
+import bor.tools.simplellm.chat.MessageRole;
 import bor.tools.simplellm.exceptions.LLMAuthenticationException;
 import bor.tools.simplellm.exceptions.LLMException;
 import bor.tools.simplellm.exceptions.LLMNetworkException;
@@ -65,24 +75,67 @@ import okhttp3.ResponseBody;
  */
 public class OpenAILLMService implements LLMService {
 
-	protected static final Map<String, Model> defaultModelMap;
+	public static final String FAST_MODEL = "gpt-4.1-mini";
+
+	protected static final MapModels defaultModelMap;
 
 	protected static final LLMConfig defaultLLMConfig;
 
 	static {
-		Map<String, Model> map = new LinkedHashMap<>();
+		MapModels map = new MapModels();
 
-		Model text_emb_3_small = new Model("text-embedding-3-small", 8000, EMBEDDING, BATCH);
-		Model gpt_5_nano       = new Model("gpt-5-nano", 400000, LANGUAGE, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
-		Model gpt_5_mini       =
-		            new Model("gpt-5-mini", 400000, REASONING, LANGUAGE, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
-		Model gpt_5            =
-		            new Model("gpt-5", 400000, REASONING, LANGUAGE, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
+		Model text_emb_3_small = new Model("text-embedding-3-small", 8000, EMBEDDING, EMBEDDING_DIMENSION, BATCH);
+		Model text_emb_2_ADA   = new Model("text-embedding-ada-002", 8000, EMBEDDING, BATCH);
+		Model gpt_5_nano       = new Model("gpt-5-nano",
+		            400000,
+		            GPT5_CLASS,
+		            LANGUAGE,
+		            FAST,
+		            VISION,
+		            CODING,
+		            BATCH,
+		            TOOLS,
+		            RESPONSES_API);
+		Model gpt_5_mini       = new Model("gpt-5-mini",
+		            400000,
+		            GPT5_CLASS,
+		            REASONING,
+		            FAST,
+		            LANGUAGE,
+		            VISION,
+		            CODING,
+		            BATCH,
+		            TOOLS,
+		            RESPONSES_API);
+		Model gpt_5            = new Model("gpt-5",
+		            400000,
+		            GPT5_CLASS,
+		            REASONING,
+		            LANGUAGE,
+		            VISION,
+		            CODING,
+		            BATCH,
+		            TOOLS,
+		            RESPONSES_API);
 		Model gpt_4_1          = new Model("gpt-4.1", 1047576, LANGUAGE, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
 		Model gpt_4_mini       =
-		            new Model("gpt-4.1-mini", 1047576, LANGUAGE, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
-		Model gpt_4o_mini      = new Model("gpt-4o-mini", 128000, LANGUAGE, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
-		Model gpt_o3_mini      = new Model("o3-mini", 128000, REASONING, LANGUAGE, CODING, BATCH, TOOLS, RESPONSES_API);
+		            new Model("gpt-4.1-mini", 1047576, LANGUAGE, FAST, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
+		Model gpt_4o_mini      =
+		            new Model("gpt-4o-mini", 128000, LANGUAGE, FAST, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
+		Model gpt_o3_mini      = new Model("o3-mini",
+		            128000,
+		            GPT5_CLASS,
+		            REASONING,
+		            FAST,
+		            LANGUAGE,
+		            CODING,
+		            BATCH,
+		            TOOLS,
+		            RESPONSES_API);
+
+		// Image Generation Models (DALL-E)
+		Model dall_e_3 = new Model("dall-e-3", 4000, IMAGE); // 4000 character prompt limit
+		Model dall_e_2 = new Model("dall-e-2", 1000, IMAGE); // 1000 character prompt limit
 
 		map.put(gpt_5_nano.getName(), gpt_5_nano);
 		map.put(gpt_5_mini.getName(), gpt_5_mini);
@@ -91,26 +144,30 @@ public class OpenAILLMService implements LLMService {
 		map.put(gpt_4o_mini.getName(), gpt_4o_mini);
 		map.put(gpt_4_mini.getName(), gpt_4_mini);
 		map.put(text_emb_3_small.getName(), text_emb_3_small);
+		map.put(text_emb_2_ADA.getName(), text_emb_2_ADA);
 		map.put(gpt_o3_mini.getName(), gpt_o3_mini);
+		map.put(dall_e_3.getName(), dall_e_3);
+		map.put(dall_e_2.getName(), dall_e_2);
 
-		// make the defaultModelMap unmodifiable
-		defaultModelMap = Map.copyOf(map);
+		defaultModelMap = map;
 
 		defaultLLMConfig = LLMConfig.builder()
 		            .apiTokenEnvironment("OPENAI_API_KEY")
 		            .baseUrl("https://api.openai.com/v1/")
-		            .modelMap(defaultModelMap)
+		            .modelMap(map)
 		            .build();
-
 	}
 
 	protected LLMConfig config;
 
-	private boolean useResponsesAPI = false;
+	protected boolean useResponsesAPI = false;
 
-	private final OkHttpClient     httpClient;
-	private final OpenAIJsonMapper jsonMapper;
-	private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
+	protected final OkHttpClient     httpClient;
+	protected final OpenAIJsonMapper jsonMapper;
+	protected final StreamingUtil    streamingUtil;
+	protected static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
+
+	private static final String PROMPT_SUMMARY = null;
 
 	/**
 	 * Default constructor for OpenAILLMService.
@@ -135,6 +192,7 @@ public class OpenAILLMService implements LLMService {
 	public OpenAILLMService(LLMConfig config) {
 		this.config = config;
 		this.jsonMapper = new OpenAIJsonMapper();
+		this.streamingUtil = new StreamingUtil(this.jsonMapper);
 		this.httpClient = new OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
 		            .readTimeout(60, TimeUnit.SECONDS)
 		            .writeTimeout(30, TimeUnit.SECONDS)
@@ -162,8 +220,7 @@ public class OpenAILLMService implements LLMService {
 	 * 
 	 * @throws LLMException if request fails
 	 */
-	protected Map<String, Object> postRequest(String endpoint, Map<String, Object> payload)
-	            throws LLMException {
+	protected Map<String, Object> postRequest(String endpoint, Map<String, Object> payload) throws LLMException {
 		try {
 			String url = config.getBaseUrl().endsWith("/") ? config.getBaseUrl() + endpoint : config.getBaseUrl()
 			            + "/"
@@ -200,8 +257,7 @@ public class OpenAILLMService implements LLMService {
 	 * @throws LLMException if response indicates error
 	 */
 	@SuppressWarnings("unchecked")
-	protected Map<String, Object> handleHttpResponse(Response response)
-	            throws LLMException {
+	protected Map<String, Object> handleHttpResponse(Response response) throws LLMException {
 		try (ResponseBody responseBody = response.body()) {
 			if (responseBody == null) {
 				throw new LLMException("Empty response from API");
@@ -214,12 +270,18 @@ public class OpenAILLMService implements LLMService {
 				case 200:
 					return jsonMapper.fromJson(responseText);
 				case 401:
-					throw new LLMAuthenticationException("Authentication failed: Invalid API key");
+					throw new LLMAuthenticationException("Authentication failed: Invalid API key.\n\t"
+					            + responseText
+					            + "\n");
 				case 429:
-					throw new LLMRateLimitException("Rate limit exceeded");
+					throw new LLMRateLimitException("Rate limit exceeded. \n\t"
+					            + responseText
+					            + "\n");
 				case 408:
 				case 504:
-					throw new LLMTimeoutException("Request timeout");
+					throw new LLMTimeoutException("Request timeout.\n\t"
+					            + responseText
+					            + "\n");
 				default:
 					// Try to parse error response
 					try {
@@ -251,8 +313,7 @@ public class OpenAILLMService implements LLMService {
 	 * 
 	 * @throws LLMException if token is not available
 	 */
-	protected String getApiToken()
-	            throws LLMException {
+	protected String getApiToken() throws LLMException {
 		String token = config.getApiToken();
 		if (token == null || token.trim().isEmpty()) {
 			// Try environment variable
@@ -263,8 +324,8 @@ public class OpenAILLMService implements LLMService {
 		}
 
 		if (token == null || token.trim().isEmpty()) {
-			throw new LLMAuthenticationException(
-			            "API token not configured. Set OPENAI_API_TOKEN environment variable or provide token in config.");
+			throw new LLMAuthenticationException("API token not configured. "
+			            + "Set OPENAI_API_KEY environment variable or provide token in config.");
 		}
 
 		token = token.trim();
@@ -280,8 +341,7 @@ public class OpenAILLMService implements LLMService {
 	 * </p>
 	 */
 	@Override
-	public List<Model> models()
-	            throws LLMException {
+	public List<Model> models() throws LLMException {
 		return config.getModelMap().values().stream().toList();
 	}
 
@@ -293,8 +353,7 @@ public class OpenAILLMService implements LLMService {
 	 * </p>
 	 */
 	@Override
-	public float[] embeddings(String texto, String model, Integer vecSize)
-	            throws LLMException {
+	public float[] embeddings(String texto, String model, Integer vecSize) throws LLMException {
 
 		if (texto == null || texto.trim().isEmpty()) {
 			throw new LLMException("Text cannot be null or empty");
@@ -305,9 +364,27 @@ public class OpenAILLMService implements LLMService {
 			model = "text-embedding-3-small";
 		}
 
+		if (isModelType(model, EMBEDDING) == false) {
+			throw new LLMException("Embeddings not supported for model "
+			            + model
+			            + ". Use a dedicated embedding model like text-embedding-3-small.");
+		}
+
+		if (isModelType(model, EMBEDDING_DIMENSION) == false && vecSize != null) {
+			throw new LLMException("Model "
+			            + model
+			            + " does not support custom embedding dimensions.");
+		}
+
+		String encodingFormat = null;
+		if (isOpenAIEndpoint()) {
+			encodingFormat = "base64";
+		}
+
 		try {
+
 			// Create request payload
-			Map<String, Object> payload = jsonMapper.toEmbeddingsRequest(texto.trim(), model, vecSize);
+			Map<String, Object> payload = jsonMapper.toEmbeddingsRequest(texto.trim(), model, vecSize, encodingFormat);
 
 			// Make API request
 			Map<String, Object> response = postRequest("embeddings", payload);
@@ -348,36 +425,21 @@ public class OpenAILLMService implements LLMService {
 	 * <li>If using other endpoints, it uses the chatCompletions endpoint.
 	 */
 	@Override
-	public CompletionResponse completion(String system, String query, MapParam params)
-	            throws LLMException {
+	public CompletionResponse completion(String system, String query, MapParam params) throws LLMException {
 
 		if (query == null || query.trim().isEmpty()) {
 			throw new LLMException("Query cannot be null or empty");
 		}
 
-		boolean isOpenAIEndpoint = isOpenAIEndpoint();
+		params = fixParams(params);
 
-		// Check if we should use the responses endpoint (for newer models like gpt-5)
-		String model = params != null ? (String) params.get("model") : "gpt-4o-mini";
-		if (model == null || model.trim().isEmpty()) {
-			model = "gpt-4o-mini";
+		// Use chat completions endpoint (recommended approach)
+		Chat chat = new Chat();
+		if (system != null && !system.trim().isEmpty()) {
+			chat.addSystemMessage(system.trim());
 		}
+		return chatCompletion(chat, query, params);
 
-		// Check if model supports responses API
-		boolean useResponsesAPI = this.useResponsesAPI && isOpenAIEndpoint && isResponsesAPIModel(model);
-
-		if (useResponsesAPI) {
-			// Use responses endpoint for compatible models
-			MapParam paramsAPI = convert2ResponseAPI(params);
-			return completionWithResponsesAPI(system, query, paramsAPI, model);
-		} else {
-			// Use chat completions endpoint (recommended approach)
-			Chat chat = new Chat();
-			if (system != null && !system.trim().isEmpty()) {
-				chat.addSystemMessage(system.trim());
-			}
-			return chatCompletion(chat, query, params);
-		}
 	}
 
 	/**
@@ -395,13 +457,9 @@ public class OpenAILLMService implements LLMService {
 		// Check if the model is configured with RESPONSES_API capability
 		Model modelConfig = config.getModelMap().get(model);
 		if (modelConfig != null) {
-			return modelConfig.getTypes().contains(RESPONSES_API);
+			return modelConfig.getTypes().contains(RESPONSES_API) || modelConfig.isType(GPT5_CLASS);
 		}
-
-		// Fall back to name-based detection for known models
-		return model.startsWith("gpt-5") || model.startsWith("o3")
-		       || model.equals("o1-preview")
-		       || model.equals("o1-mini");
+		return false;
 	}
 
 	/**
@@ -512,8 +570,7 @@ public class OpenAILLMService implements LLMService {
 	 * @throws LLMException if parsing fails
 	 */
 	@SuppressWarnings("unchecked")
-	protected CompletionResponse parseResponsesAPIResponse(Map<String, Object> response)
-	            throws LLMException {
+	protected CompletionResponse parseResponsesAPIResponse(Map<String, Object> response) throws LLMException {
 		CompletionResponse completionResponse = new CompletionResponse();
 
 		try {
@@ -565,29 +622,16 @@ public class OpenAILLMService implements LLMService {
 	 * @throws LLMException if there's an error during chat completion
 	 */
 	@Override
-	public CompletionResponse chatCompletion(Chat chat, String query, MapParam params)
-	            throws LLMException {
+	public CompletionResponse chatCompletion(Chat chat, String query, MapParam params) throws LLMException {
 
 		if (chat == null) {
 			throw new LLMException("Chat session cannot be null");
 		}
 
-		// Determine model to use
-		String model = chat.getModel();
-		if (model == null || model.trim().isEmpty()) {
-			// Use default model from params or fall back to gpt-4o-mini
-			model = params != null ? (String) params.get("model") : null;
-			if (model == null || model.trim().isEmpty()) {
-				model = "gpt-4o-mini";
-			}
-		}
-
-		if (params != null && isOpenAIEndpoint() && isResponsesAPIModel(model)) {
-			params.replaceKeys("max_tokens", "max_completion_tokens");
-		}
+		params = fixParams(params);
 
 		// Create request payload
-		Map<String, Object> payload = jsonMapper.toChatCompletionRequest(chat, query, params, model);
+		Map<String, Object> payload = jsonMapper.toChatCompletionRequest(chat, query, params);
 
 		try {
 			// Make API request
@@ -618,6 +662,65 @@ public class OpenAILLMService implements LLMService {
 	}
 
 	/**
+	 * Fix MapParams for specific endpoints and models.
+	 * 
+	 * @param params the parameters to fix, may be null
+	 */
+	protected MapParam fixParams(MapParam params) {
+		if (params == null) {
+			params = new MapParam();
+		}
+
+		// Ensure model is properly set
+		String modelName = resolveModelName(params);
+		params.put("model", modelName);
+
+		// Apply OpenAI-specific parameter adjustments
+		if (requiresOpenAIParameterAdjustment(modelName)) {
+			adjustParametersForOpenAI(params);
+		}
+		return params;
+	}
+
+	/**
+	 * Resolves the model name from parameters or uses default.
+	 * 
+	 * @param params the parameters containing potential model information
+	 * 
+	 * @return the resolved model name
+	 */
+	private String resolveModelName(MapParam params) {
+		Object modelObj = params.getModel();
+		return modelObj != null ? modelObj.toString() : getDefaultModelName();
+	}
+
+	/**
+	 * Checks if the model requires OpenAI-specific parameter adjustments.
+	 * 
+	 * @param modelName the model name to check
+	 * 
+	 * @return true if adjustments are needed
+	 */
+	private boolean requiresOpenAIParameterAdjustment(String modelName) {
+		if (!isOpenAIEndpoint()) {
+			return false;
+		}
+
+		Model model = config.getModelMap().get(modelName);
+		return isResponsesAPIModel(modelName) || (model != null && model.isType(GPT5_CLASS));
+	}
+
+	/**
+	 * Applies OpenAI-specific parameter adjustments.
+	 * 
+	 * @param params the parameters to adjust
+	 */
+	private void adjustParametersForOpenAI(MapParam params) {
+		params.replaceKeys("max_tokens", "max_completion_tokens");
+		params.remove("temperature");
+	}
+
+	/**
 	 * Check if the configured endpoint is an OpenAI official endpoint.
 	 * 
 	 * @return
@@ -632,10 +735,68 @@ public class OpenAILLMService implements LLMService {
 	 * </p>
 	 */
 	@Override
-	public int tokenCount(String text, String model)
-	            throws LLMException {
-		// TODO Auto-generated method stub
-		return 0;
+	public int tokenCount(String text, String model) throws LLMException {
+		if (text == null) {
+			return 0;
+		}
+
+		// Normalize line endings
+		text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\n\n", "\n");
+
+		// Use default model if not specified
+		if (model == null || model.trim().isEmpty()) {
+			model = "gpt-4o-mini";
+		}
+
+		// Get encoding for the model
+		Encoding encoding = getEncodingForModel(model);
+		if (encoding == null) {
+			throw new LLMException("Unsupported model for token counting: "
+			            + model);
+		}
+
+		// Encode the text and count the tokens
+		return encoding.encode(text).size();
+	}
+
+	/**
+	 * Gets the encoding instance for a specific model.
+	 * 
+	 * @param model the model name
+	 * 
+	 * @return the Encoding instance, or null if not found
+	 */
+	protected Encoding getEncodingForModel(String model) {
+		try {
+			// Get the encoding registry
+			EncodingRegistry registry = Encodings.newDefaultEncodingRegistry();
+
+			// Map OpenAI models to their appropriate encodings
+			if (model.startsWith("gpt-4") || model.startsWith("gpt-3.5") || model.startsWith("text-")) {
+				return registry.getEncoding("cl100k_base").orElse(null);
+			}
+
+			// For newer models (GPT-5, O3, etc.)
+			if (model.startsWith("gpt-5") || model.startsWith("o3") || model.startsWith("o1")) {
+				return registry.getEncoding("o200k_base").orElse(registry.getEncoding("cl100k_base").orElse(null));
+			}
+
+			// For embedding models
+			if (model.contains("embedding")) {
+				return registry.getEncoding("cl100k_base").orElse(null);
+			}
+
+			// Default fallback to cl100k_base (used by most modern OpenAI models)
+			return registry.getEncoding("cl100k_base").orElse(null);
+
+		} catch (Exception e) {
+			// Fallback to a safe default
+			try {
+				return Encodings.newDefaultEncodingRegistry().getEncoding("cl100k_base").orElse(null);
+			} catch (Exception fallbackException) {
+				return null;
+			}
+		}
 	}
 
 	/**
@@ -646,10 +807,27 @@ public class OpenAILLMService implements LLMService {
 	 * </p>
 	 */
 	@Override
-	public Chat sumarizeChat(Chat chat, String summaryPrompt, MapParam params)
-	            throws LLMException {
-		// TODO Auto-generated method stub
-		return null;
+	public Chat sumarizeChat(Chat chat, String summaryPrompt, MapParam params) throws LLMException {
+		Chat summ     = new Chat();
+		var  messages = chat.getMessages();
+		for (Message message : messages) {
+			if (message.getRole() == MessageRole.SYSTEM || message.getRole() == MessageRole.DEVELOPER) {
+				summ.addMessage(message);
+				continue;
+			}
+			// Only summarize user and assistant messages
+			if (message.getContent().getType() == ContentType.TEXT) {
+				String  txt      = message.getText();
+				String  summy    = sumarizeText(summaryPrompt, txt, params);
+				Message nMessage = new Message(message.getRole(), summy);
+				summ.addMessage(nMessage);
+				continue;
+			} else {
+				// keep non-text messages as is
+				summ.addMessage(message);
+			}
+		}
+		return summ;
 	}
 
 	/**
@@ -660,10 +838,12 @@ public class OpenAILLMService implements LLMService {
 	 * </p>
 	 */
 	@Override
-	public String sumarizeText(String text, String summaryPrompt, MapParam params)
-	            throws LLMException {
-		// TODO Auto-generated method stub
-		return null;
+	public String sumarizeText(String summaryPrompt, String text, MapParam params) throws LLMException {
+		if (summaryPrompt == null || summaryPrompt.isEmpty()) {
+			summaryPrompt = PROMPT_SUMMARY;
+		}
+		CompletionResponse res = this.completion(summaryPrompt, text, params);
+		return res.getText();
 	}
 
 	/**
@@ -676,8 +856,25 @@ public class OpenAILLMService implements LLMService {
 	@Override
 	public CompletionResponse completionStream(ResponseStream stream, String system, String query, MapParam params)
 	            throws LLMException {
-		// TODO Auto-generated method stub
-		return null;
+
+		if (query == null || query.trim().isEmpty()) {
+			throw new LLMException("Query cannot be null or empty");
+		}
+
+		if (stream == null) {
+			throw new LLMException("ResponseStream cannot be null");
+		}
+
+		params = fixParams(params);
+		// Create a temporary chat for the completion
+		Chat tempChat = new Chat();
+		if (system != null && !system.trim().isEmpty()) {
+			tempChat.addSystemMessage(system);
+		}
+		tempChat.addUserMessage(query);
+
+		// Use chatCompletionStream for the actual streaming
+		return chatCompletionStream(stream, tempChat, null, params);
 	}
 
 	/**
@@ -690,8 +887,85 @@ public class OpenAILLMService implements LLMService {
 	@Override
 	public CompletionResponse chatCompletionStream(ResponseStream stream, Chat chat, String query, MapParam params)
 	            throws LLMException {
-		// TODO Auto-generated method stub
-		return null;
+
+		if (chat == null) {
+			throw new LLMException("Chat session cannot be null");
+		}
+
+		if (stream == null) {
+			throw new LLMException("ResponseStream cannot be null");
+		}
+
+		params = fixParams(params);
+		// Determine model to use
+		String model = chat.getModel();
+		if (model == null || model.trim().isEmpty()) {
+			model = findModel(params);
+		}
+
+		params = fixParams(params);
+
+		// Create parameters copy and enable streaming
+		MapParam streamParams = new MapParam(params);
+		streamParams.put("stream", true);
+
+		// Create request payload
+		Map<String, Object> payload = jsonMapper.toChatCompletionRequest(chat, query, streamParams);
+
+		try {
+			// Make streaming HTTP request
+			String  requestBody = jsonMapper.toJson(payload);
+			Request request     = new Request.Builder().url(config.getBaseUrl()
+			            + "chat/completions")
+			            .header("Authorization",
+			                    "Bearer "
+			                                + getApiToken())
+			            .header("Content-Type", "application/json")
+			            .header("Accept", "text/event-stream")
+			            .post(okhttp3.RequestBody.create(requestBody, JSON_MEDIA_TYPE))
+			            .build();
+
+			Response response = httpClient.newCall(request).execute();
+
+			if (!response.isSuccessful()) {
+				String errorBody = response.body() != null ? response.body().string() : "Unknown error";
+				throw new LLMException("Streaming request failed with status: "
+				            + response.code()
+				            + " - "
+				            + errorBody);
+			}
+
+			// Process streaming response
+			java.util.concurrent.Future<CompletionResponse> future =
+			            streamingUtil.processStreamingFromBody(response.body(), stream);
+
+			// Wait for completion and return final response
+			CompletionResponse finalResponse = future.get();
+
+			// Add the query and response to chat history if query was provided
+			if (query != null && !query.trim().isEmpty()) {
+				chat.addUserMessage(query);
+			}
+
+			if (finalResponse.getResponse() != null) {
+				String assistantResponse = finalResponse.getResponse().getText();
+				if (assistantResponse != null && !assistantResponse.trim().isEmpty()) {
+					chat.addAssistantMessage(assistantResponse);
+				}
+			}
+
+			// Set chat ID in response
+			finalResponse.setChatId(chat.getId());
+
+			return finalResponse;
+
+		} catch (Exception e) {
+			if (e instanceof LLMException) {
+				throw (LLMException) e;
+			}
+			throw new LLMException("Failed to process streaming chat completion: "
+			            + e.getMessage(), e);
+		}
 	}
 
 	/**
@@ -699,5 +973,131 @@ public class OpenAILLMService implements LLMService {
 	 */
 	@Override
 	public LLMConfig getLLMConfig() { return this.config; }
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String getDefaultModelName() { return FAST_MODEL; }
+
+	// ================== IMAGE GENERATION METHODS ==================
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public CompletionResponse generateImage(String prompt, MapParam params) throws LLMException {
+		if (prompt == null || prompt.trim().isEmpty()) {
+			throw new LLMException("Image generation prompt cannot be null or empty");
+		}
+
+		params = fixParams(params);
+		
+		// Ensure we have an image generation model
+		String model = findModel(params);
+		if (model != null && !isModelType(model, LLMConfig.MODEL_TYPE.IMAGE)) {
+			// Try to find a suitable image generation model
+			Model imageModel = findModel(LLMConfig.MODEL_TYPE.IMAGE);
+			if (imageModel != null) {
+				params.put("model", imageModel.getName());
+			} else {
+				throw new LLMException("No image generation model available. Please configure a DALL-E model.");
+			}
+		}
+
+		try {
+			// Create request payload
+			Map<String, Object> payload = jsonMapper.toImageGenerationRequest(prompt, params);
+			
+			// Make API request to images/generations endpoint
+			Map<String, Object> response = postRequest("/images/generations", payload);
+			
+			// Convert response
+			return jsonMapper.fromImageGenerationResponse(response);
+			
+		} catch (LLMException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new LLMException("Unexpected error during image generation: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public CompletionResponse editImage(byte[] originalImage, String prompt, byte[] maskImage, MapParam params) throws LLMException {
+		if (originalImage == null || originalImage.length == 0) {
+			throw new LLMException("Original image data cannot be null or empty");
+		}
+		if (prompt == null || prompt.trim().isEmpty()) {
+			throw new LLMException("Image edit prompt cannot be null or empty");
+		}
+
+		params = fixParams(params);
+
+		try {
+			// Create request payload (note: actual multipart handling would be in postMultipartRequest)
+			Map<String, Object> payload = jsonMapper.toImageEditRequest(originalImage, prompt, maskImage, params);
+			
+			// Make API request to images/edits endpoint
+			// Note: This would require a special multipart request method
+			Map<String, Object> response = postMultipartRequest("/images/edits", payload);
+			
+			// Convert response  
+			return jsonMapper.fromImageGenerationResponse(response);
+			
+		} catch (LLMException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new LLMException("Unexpected error during image editing: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public CompletionResponse createImageVariation(byte[] originalImage, MapParam params) throws LLMException {
+		if (originalImage == null || originalImage.length == 0) {
+			throw new LLMException("Original image data cannot be null or empty");
+		}
+
+		params = fixParams(params);
+
+		try {
+			// Create request payload
+			Map<String, Object> payload = jsonMapper.toImageVariationRequest(originalImage, params);
+			
+			// Make API request to images/variations endpoint
+			Map<String, Object> response = postMultipartRequest("/images/variations", payload);
+			
+			// Convert response
+			return jsonMapper.fromImageGenerationResponse(response);
+			
+		} catch (LLMException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new LLMException("Unexpected error during image variation: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Helper method to handle multipart requests for image upload endpoints.
+	 * This is a placeholder - full implementation would require OkHttp multipart support.
+	 * 
+	 * @param endpoint the API endpoint
+	 * @param payload the request payload containing image data and parameters
+	 * 
+	 * @return response Map
+	 * 
+	 * @throws LLMException if request fails
+	 */
+	private Map<String, Object> postMultipartRequest(String endpoint, Map<String, Object> payload) throws LLMException {
+		// TODO: Implement full multipart/form-data support with OkHttp
+		// For now, throw an informative exception
+		throw new LLMException("Image editing and variations require multipart upload support, which is not yet implemented. " +
+							  "Only image generation from text prompts is currently supported.");
+	}
 
 }

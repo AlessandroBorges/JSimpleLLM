@@ -3,7 +3,6 @@ package bor.tools.simplellm;
 import java.util.List;
 
 import bor.tools.simplellm.LLMConfig.MODEL_TYPE;
-import bor.tools.simplellm.LLMConfig.Model;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.exceptions.LLMException;
 
@@ -37,8 +36,7 @@ public interface LLMService {
 	 * @see LLMConfig
 	 * @see Model
 	 */
-	List<Model> models()
-	            throws LLMException;
+	List<Model> models() throws LLMException;
 
 	/**
 	 * Generates embeddings for the given text using the specified model.
@@ -57,8 +55,7 @@ public interface LLMService {
 	 * 
 	 * @throws LLMException if there's an error generating the embeddings
 	 */
-	float[] embeddings(String texto, String model, Integer vecSize)
-	            throws LLMException;
+	float[] embeddings(String texto, String model, Integer vecSize) throws LLMException;
 
 	/**
 	 * Performs a simple text completion using the specified system prompt and user
@@ -76,8 +73,7 @@ public interface LLMService {
 	 * 
 	 * @throws LLMException if there's an error during completion
 	 */
-	CompletionResponse completion(String system, String query, MapParam params)
-	            throws LLMException;
+	CompletionResponse completion(String system, String query, MapParam params) throws LLMException;
 
 	/**
 	 * Performs a simple text completion using the specified system prompt and user
@@ -95,8 +91,7 @@ public interface LLMService {
 	 * 
 	 * @throws LLMException if there's an error during completion
 	 */
-	CompletionResponse chatCompletion(Chat chat, String query, MapParam params)
-	            throws LLMException;
+	CompletionResponse chatCompletion(Chat chat, String query, MapParam params) throws LLMException;
 
 	/**
 	 * Performs a streaming text completion using the specified system prompt and
@@ -138,6 +133,96 @@ public interface LLMService {
 	CompletionResponse chatCompletionStream(ResponseStream stream, Chat chat, String query, MapParam params)
 	            throws LLMException;
 
+	// ================== IMAGE GENERATION METHODS ==================
+
+	/**
+	 * Generates one or more images from a text prompt using an image generation model.
+	 * <p>
+	 * This method creates images based on descriptive text input. The generated images
+	 * can be returned as URLs or base64-encoded data, depending on the response format
+	 * specified in the parameters.
+	 * </p>
+	 * <p>
+	 * Common parameters include:
+	 * <ul>
+	 * <li>{@code model} - Image generation model (e.g., "dall-e-3", "dall-e-2")</li>
+	 * <li>{@code size} - Image dimensions (e.g., "1024x1024", "512x512")</li>
+	 * <li>{@code quality} - Image quality ("standard", "hd")</li>
+	 * <li>{@code n} - Number of images to generate (1-10)</li>
+	 * <li>{@code response_format} - Return format ("url", "b64_json")</li>
+	 * <li>{@code style} - Image style ("vivid", "natural")</li>
+	 * </ul>
+	 * </p>
+	 *
+	 * @param prompt the text description of the desired image(s)
+	 * @param params additional parameters such as size, quality, number of images, etc.
+	 * 
+	 * @return CompletionResponse containing the generated image(s) as ContentWrapper.ImageContent
+	 * 
+	 * @throws LLMException if the model doesn't support image generation or there's an API error
+	 * 
+	 * @see ContentWrapper.ImageContent
+	 * @see LLMConfig.MODEL_TYPE#IMAGE
+	 */
+	CompletionResponse generateImage(String prompt, MapParam params) throws LLMException;
+
+	/**
+	 * Edits an existing image based on a text prompt and an optional mask.
+	 * <p>
+	 * This method modifies parts of an existing image according to the text description.
+	 * A mask can be provided to specify which areas should be edited (transparent areas
+	 * in the mask will be edited, opaque areas will be preserved).
+	 * </p>
+	 * <p>
+	 * Requirements:
+	 * <ul>
+	 * <li>Original image must be PNG format, less than 4MB, and square</li>
+	 * <li>Mask (if provided) must be PNG format with transparency</li>
+	 * <li>Both images must be the same dimensions</li>
+	 * </ul>
+	 * </p>
+	 *
+	 * @param originalImage the original image data as byte array (PNG format)
+	 * @param prompt the text description of the desired edit
+	 * @param maskImage optional mask image as byte array (PNG with transparency)
+	 * @param params additional parameters such as size, number of images, etc.
+	 * 
+	 * @return CompletionResponse containing the edited image(s) as ContentWrapper.ImageContent
+	 * 
+	 * @throws LLMException if the model doesn't support image editing or there's an API error
+	 * 
+	 * @see ContentWrapper.ImageContent
+	 */
+	CompletionResponse editImage(byte[] originalImage, String prompt, byte[] maskImage, MapParam params) throws LLMException;
+
+	/**
+	 * Creates variations of an existing image.
+	 * <p>
+	 * This method generates new images that are similar to the provided original image
+	 * but with variations in style, composition, or other aspects. No text prompt is
+	 * required - variations are based solely on the visual content of the original.
+	 * </p>
+	 * <p>
+	 * Requirements:
+	 * <ul>
+	 * <li>Image must be PNG format, less than 4MB, and square</li>
+	 * <li>Supported sizes depend on the model (typically 256x256, 512x512, 1024x1024)</li>
+	 * </ul>
+	 * </p>
+	 *
+	 * @param originalImage the original image data as byte array (PNG format)
+	 * @param params additional parameters such as size, number of variations, etc.
+	 * 
+	 * @return CompletionResponse containing the image variation(s) as ContentWrapper.ImageContent
+	 * 
+	 * @throws LLMException if the model doesn't support image variations or there's an API error
+	 * 
+	 * @see ContentWrapper.ImageContent
+	 */
+	CompletionResponse createImageVariation(byte[] originalImage, MapParam params) throws LLMException;
+
+	// ================== TOKEN AND TEXT METHODS ==================
+
 	/**
 	 * Counts the number of tokens in the given text using the specified
 	 * tokenization model.
@@ -154,8 +239,7 @@ public interface LLMService {
 	 * 
 	 * @throws LLMException if there's an error during token counting
 	 */
-	int tokenCount(String text, String model)
-	            throws LLMException;
+	int tokenCount(String text, String model) throws LLMException;
 
 	/**
 	 * Summarizes the provided chat using the specified summary prompt and
@@ -175,8 +259,7 @@ public interface LLMService {
 	 * 
 	 * @throws LLMException if there's an error during chat summarization
 	 */
-	Chat sumarizeChat(Chat chat, String summaryPrompt, MapParam params)
-	            throws LLMException;
+	Chat sumarizeChat(Chat chat, String summaryPrompt, MapParam params) throws LLMException;
 
 	/**
 	 * Summarizes the provided text using the specified summary prompt and
@@ -196,8 +279,7 @@ public interface LLMService {
 	 * 
 	 * @throws LLMException if there's an error during text summarization
 	 */
-	String sumarizeText(String text, String summaryPrompt, MapParam params)
-	            throws LLMException;
+	String sumarizeText(String text, String summaryPrompt, MapParam params) throws LLMException;
 
 	/**
 	 * Get the LLM configuration .
@@ -224,6 +306,93 @@ public interface LLMService {
 	default boolean isModelType(String modelName, MODEL_TYPE type) {
 		LLMConfig config = getLLMConfig();
 		Model     model  = config.getModelMap().get(modelName);
+		if (model != null) {
+			return model.getTypes().contains(type);
+		}
+		return false;
+	}
+
+	String getDefaultModelName();
+
+	/**
+	 * Finds the model name from the provided parameters.
+	 * 
+	 * @param params
+	 * 
+	 * @return
+	 */
+	default String findModel(MapParam params) {
+		if (params != null && params.containsKey("model")) {
+			Object modelObj = params.get("model");
+			if (modelObj != null) {
+				String model = modelObj.toString();
+				if (model != null && !model.trim().isEmpty()) {
+					return model;
+				}
+			}
+		}
+		return getDefaultModelName();
+	}
+
+	/**
+	 * Finds the most suitable model that matches all specified types.
+	 * <p>
+	 * This method iterates through the available models and selects the one that
+	 * best fits the requested capabilities, such as completion, chat, or
+	 * embeddings.
+	 * If multiple models match, the one with the highest number of matching types
+	 * is returned.
+	 * </p>
+	 *
+	 * @param types variable arguments of model types to match (e.g., COMPLETION,
+	 *              CHAT, EMBEDDINGS)
+	 * 
+	 * @return the Model that best matches the specified types, or null if no model
+	 *         matches
+	 * 
+	 * @see LLMConfig.MODEL_TYPE
+	 * @see Model
+	 * @see MODEL_TYPE
+	 * @see LLMConfig
+	 */
+	default Model findModel(MODEL_TYPE... types) {
+		MapModels models   = getLLMConfig().getModelMap();
+		Model     selected = null;
+		int       maxNota  = 0;
+		for (var model : models.values()) {
+			int nota = 0;
+			for (var type : types) {
+				if (isModelType(model, type)) {
+					nota++;
+				}
+			}
+			if (nota > maxNota) {
+				maxNota = nota;
+				selected = model;
+			}
+		}
+		return selected;
+	}
+
+	/**
+	 * Checks if the specified model supports the given type of operation.
+	 * <p>
+	 * This method verifies whether a model is capable of performing tasks such as
+	 * completion, chat, or embeddings based on its configured types.
+	 * </p>
+	 *
+	 * @param model - Model object to check
+	 * @param type  - the type of operation to verify (e.g., COMPLETION, CHAT,
+	 *              EMBEDDINGS)
+	 * 
+	 * @return true if the model supports the specified type, false otherwise
+	 * 
+	 * @see LLMConfig.MODEL_TYPE
+	 * @see Model
+	 * @see MODEL_TYPE
+	 * @see LLMConfig
+	 */
+	default boolean isModelType(Model model, MODEL_TYPE type) {
 		if (model != null) {
 			return model.getTypes().contains(type);
 		}

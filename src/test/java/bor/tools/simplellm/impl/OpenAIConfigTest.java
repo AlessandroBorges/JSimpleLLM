@@ -12,8 +12,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import bor.tools.simplellm.LLMConfig;
-import bor.tools.simplellm.LLMConfig.Model;
 import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.Model;
 import bor.tools.simplellm.exceptions.LLMAuthenticationException;
 import bor.tools.simplellm.exceptions.LLMException;
 

@@ -1,8 +1,6 @@
 package bor.tools.simplellm;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import lombok.Builder;
@@ -52,6 +50,9 @@ public class LLMConfig {
 	 * </p>
 	 * <ul>
 	 * <li>{@code EMBEDDING} - Models for generating text embeddings</li>
+	 * <li>{@code EMBEDDING_DIMENSION} - Models that provide dimensioning
+	 * (Matrioshka)
+	 * for embeddings</li>
 	 * <li>{@code LANGUAGE} - General language understanding and generation
 	 * models</li>
 	 * <li>{@code FAST} - Models optimized for speed and quick responses</li>
@@ -66,7 +67,20 @@ public class LLMConfig {
 	 * </ul>
 	 */
 	public enum MODEL_TYPE {
-			EMBEDDING, LANGUAGE, FAST, REASONING, CODING, TEXT, VISION, IMAGE, AUDIO, RESPONSES_API, BATCH, TOOLS
+			EMBEDDING,
+			EMBEDDING_DIMENSION,
+			LANGUAGE,
+			FAST,
+			REASONING,
+			CODING,
+			TEXT,
+			VISION,
+			IMAGE,
+			AUDIO,
+			RESPONSES_API,
+			BATCH,
+			TOOLS,
+			GPT5_CLASS
 	}
 
 	/**
@@ -126,94 +140,6 @@ public class LLMConfig {
 	 * </p>
 	 */
 	@Builder.Default
-	private Map<String, Model> modelMap = new LinkedHashMap<>();
-
-	/**
-	 * Inner class representing a specific LLM model configuration.
-	 * <p>
-	 * This class encapsulates the properties and capabilities of an individual
-	 * model, including its name, supported types, and context length limitations.
-	 * </p>
-	 * <p>
-	 * A model can support multiple types simultaneously, allowing for versatile
-	 * usage across different use cases.
-	 * </p>
-	 */
-	@Data
-	public static class Model {
-
-		/**
-		 * The name of the model.
-		 * <p>
-		 * This should be the official model name as recognized by the LLM provider,
-		 * for example: "gpt-4", "claude-3-sonnet", "llama-2-70b"
-		 * </p>
-		 */
-		String name;
-
-		/**
-		 * List of model types that this model supports.
-		 * <p>
-		 * A model can support multiple types, allowing it to be used for different
-		 * purposes. For example, a model might support both {@code LANGUAGE} and
-		 * {@code REASONING} types.
-		 * </p>
-		 * 
-		 * @see MODEL_TYPE
-		 */
-		List<MODEL_TYPE> types;
-
-		/**
-		 * The maximum context length supported by this model.
-		 * <p>
-		 * This value represents the maximum number of tokens (words, characters, or
-		 * other units depending on the tokenization method) that can be processed
-		 * in a single request, including both input and output tokens.
-		 * </p>
-		 * <p>
-		 * Common values include 4096, 8192, 16384, 32768, or larger depending
-		 * on the model's capabilities.
-		 * </p>
-		 */
-		Integer contextLength;
-
-		/**
-		 * Default constructor.
-		 * <p>
-		 * Initializes the type list with an initial capacity of 2 elements
-		 * to optimize for the common case of models supporting 1-2 types.
-		 * </p>
-		 */
-		public Model() {
-			types = new ArrayList<>(2);
-		}
-
-		/**
-		 * Parameterized constructor for creating a model with specified properties.
-		 * <p>
-		 * This constructor initializes all model properties and populates the
-		 * type list with the provided model types.
-		 * </p>
-		 * 
-		 * @param name          the name of the model (must not be null)
-		 * @param contextLength the maximum context length for this model
-		 * @param types         variable arguments of model types this model supports
-		 * 
-		 * @see MODEL_TYPE
-		 */
-		public Model(String name, Integer contextLength, MODEL_TYPE... model_types) {
-			this();
-			this.name = name;
-			this.contextLength = contextLength;
-			if (types != null) {
-				for (var mt : model_types) {
-					types.add(mt);
-				}
-			}
-		}
-
-		public List<MODEL_TYPE> getTypes() { // TODO Auto-generated method stub
-			return this.types;
-		}
-	}
+	private MapModels modelMap = new MapModels(); // class model
 }
+// LLMConfig
