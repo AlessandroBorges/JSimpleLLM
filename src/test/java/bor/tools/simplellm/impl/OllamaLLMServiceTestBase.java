@@ -28,6 +28,7 @@ public abstract class OllamaLLMServiceTestBase {
 
 		// Create service with default configuration
 		config = OllamaLLMService.getDefaultLLMConfig();
+		config.setBaseUrl("http://localhost:11435/v1/");
 		llmService = new OllamaLLMService(config);
 	}
 

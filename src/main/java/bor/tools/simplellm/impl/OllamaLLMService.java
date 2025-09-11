@@ -1,16 +1,15 @@
 package bor.tools.simplellm.impl;
 
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.EMBEDDING;
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.EMBEDDING_DIMENSION;
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.LANGUAGE;
+import static bor.tools.simplellm.Model_Type.EMBEDDING;
+import static bor.tools.simplellm.Model_Type.EMBEDDING_DIMENSION;
+import static bor.tools.simplellm.Model_Type.LANGUAGE;
 
-import java.util.Map;
-
-import bor.tools.simplellm.CompletionResponse;
 import bor.tools.simplellm.LLMConfig;
 import bor.tools.simplellm.MapModels;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model;
+import bor.tools.simplellm.ModelEmbedding;
+import bor.tools.simplellm.ModelEmbedding.Emb_Operation;
 import bor.tools.simplellm.exceptions.LLMException;
 
 /**
@@ -38,10 +37,11 @@ import bor.tools.simplellm.exceptions.LLMException;
  */
 public class OllamaLLMService extends OpenAILLMService {
 
-	static final String              DEFAULT_PROMPT =
-	            "You are helpful assistant, which ansewer in same language used as input.";
-	protected static final MapModels defaultModelMap;
-	protected static final LLMConfig defaultLLMConfig;
+	static final String DEFAULT_PROMPT = "You are a helpful assistant who responds in the same language used as input.";
+
+	private static final LLMConfig defaultLLMConfig;
+
+	private static final String DEFAULT_MODEL = "qwen3-1.7b";
 
 	static {
 		MapModels map = new MapModels();
@@ -49,24 +49,26 @@ public class OllamaLLMService extends OpenAILLMService {
 		// Ollama model definition - using phi-4-mini as requested by user
 
 		// nomic-embed-text:latest
-		Model snowflake  = new Model("snowflake-arctic-embed2:latest", "snowflake", 8000, EMBEDDING, EMBEDDING_DIMENSION);
-		Model nomic      = new Model("nomic-embed-text:latest ", "nomic", 8000, EMBEDDING, EMBEDDING_DIMENSION);
+		Model snowflake  = new ModelEmbedding("snowflake-arctic-embed2", "snowflake", 8000, EMBEDDING, EMBEDDING_DIMENSION);
+		Model nomic      = new ModelEmbedding("nomic-embed-text", "nomic", 8000, EMBEDDING, EMBEDDING_DIMENSION);
+		Model gemma      = new ModelEmbedding("embeddinggemma", "embeddinggemma", 8000, EMBEDDING, EMBEDDING_DIMENSION);
+		
+		Model qwen3_17b   = new Model("qwen3:1.7b", "qwen3-1.7b", 8192, LANGUAGE);		
 		Model phi35_mini = new Model("phi3.5:3.8b-mini-instruct-q5_K_M", "phi3.5-mini", 16000, LANGUAGE);
 		Model phi4_mini  = new Model("kwangsuklee/phi4-mini-inst-q5-250228", "phi4-mini", 16000, LANGUAGE);
 
-		map.add(snowflake);
-		map.add(nomic);
-		map.add(phi35_mini);
+		map.add(qwen3_17b);
 		map.add(phi4_mini);
-
-		// Make the defaultModelMap unmodifiable
-		defaultModelMap = map;
+		map.add(phi35_mini);
+		//map.add(snowflake);
+		map.add(nomic);
+		map.add(gemma);
 
 		defaultLLMConfig = LLMConfig.builder()
 		            .apiTokenEnvironment("OLLAMA_API_KEY")
 		            .apiToken("ollama") // Default API key for Ollama
 		            .baseUrl("http://localhost:11434/v1/")
-		            .modelMap(defaultModelMap)
+		            .modelMap(map)
 		            .build();
 	}
 
@@ -89,8 +91,31 @@ public class OllamaLLMService extends OpenAILLMService {
 	 * </p>
 	 */
 	public OllamaLLMService() {
-
 		this(OllamaLLMService.getDefaultLLMConfig());
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String getDefaultModelName() {
+		MapModels models = getLLMConfig().getModelMap();
+		var       name   = models.getModel(DEFAULT_MODEL);
+		if (name == null) {
+			// If default model not found, fallback to first available model
+			System.out.println("Warning: Default model '"
+			            + DEFAULT_MODEL
+			            + "' not found in configuration. "
+			            + "Falling back to first available model.");
+			// pick first language model
+			name = models.values()
+			            .stream()
+			            .filter(model -> isModelType(model.getName(), LANGUAGE))
+			            .findFirst()
+			            .orElse(null);
+
+		}
+		return name.toString();
 	}
 
 	/**
@@ -145,7 +170,6 @@ public class OllamaLLMService extends OpenAILLMService {
 			token = "ollama";
 			config.setApiToken(token);
 		}
-
 		return token.trim();
 	}
 
@@ -164,7 +188,7 @@ public class OllamaLLMService extends OpenAILLMService {
 	 * This is useful for Ollama where model capabilities might vary.
 	 */
 	@Override
-	public boolean isModelType(String modelName, bor.tools.simplellm.LLMConfig.MODEL_TYPE type) {
+	public boolean isModelType(String modelName, bor.tools.simplellm.Model_Type type) {
 		if (modelName == null) {
 			return false;
 		}
@@ -195,65 +219,14 @@ public class OllamaLLMService extends OpenAILLMService {
 	 * unless specifically configured with an embedding model.
 	 */
 	@Override
-	public float[] embeddings(String texto, String model, Integer vecSize)
-	            throws bor.tools.simplellm.exceptions.LLMException {
-
-		// Use default embedding model if available
-		if (model == null || model.trim().isEmpty()) {
-			// Check if we have any embedding models configured
-			boolean hasEmbeddingModel =
-			            config.getModelMap().values().stream().anyMatch(m -> isModelType(m.getName(), EMBEDDING));
-
-			if (!hasEmbeddingModel) {
-				throw new bor.tools.simplellm.exceptions.LLMException(
-				            "No embedding model available in Ollama configuration. "
-				                        + "Please install an embedding model like 'nomic-embed-text' or 'bge-large'.");
-			}
-
-			// Find first available embedding model
-			model = config.getModelMap()
-			            .values()
-			            .stream()
-			            .filter(m -> isModelType(m.getName(), EMBEDDING))
-			            .map(Model::getName)
-			            .findFirst()
-			            .orElse("nomic-embed-text");
-		}
-
+	public float[] embeddings(Emb_Operation op, String texto, MapParam params)
+	            throws LLMException {
+         Object model = params.get("model");
+         if (model == null || model.toString().trim().isEmpty()) {
+			 throw new LLMException("Model parameter is required for embeddings.");        	
+         }
 		// Call parent implementation
-		return super.embeddings(texto, model, vecSize);
-	}
-
-	/**
-	 * Override completion to ensure Ollama-specific behavior.
-	 * This method adapts the completion call to Ollama's API nuances.
-	 * Oposite to OpenAI, which deprecated chat completions,
-	 * Ollama does support both classic completion and 'chatCompletion endpoints.
-	 */
-	@Override
-	public CompletionResponse completion(String prompt, String query, MapParam params) throws LLMException {
-
-		prompt = prompt == null ? DEFAULT_PROMPT : prompt;
-		query = query == null ? "" : query;
-		params = fixParams(params);
-		// Create request payload
-		Map<String, Object> payload = jsonMapper.toCompletionRequest(prompt, query, params);
-
-		try {
-			// Make API request
-			Map<String, Object> response = postRequest("/completions", payload);
-
-			// Convert response
-			CompletionResponse completionResponse = jsonMapper.fromChatCompletionResponse(response);
-
-			return completionResponse;
-
-		} catch (LLMException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new LLMException("Unexpected error during chat completion: "
-			            + e.getMessage(), e);
-		}
+		return super.embeddings(op, texto, params);
 	}
 
 }

@@ -1,7 +1,11 @@
 package bor.tools.simplellm;
 
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import bor.tools.simplellm.chat.ContentType;
+import bor.tools.simplellm.chat.ContentWrapper;
 import lombok.Data;
 
 /**
@@ -24,6 +28,7 @@ import lombok.Data;
  * @since 1.0
  */
 @Data
+@JsonPropertyOrder({ "chatId", "model", "response", "reasoning", "endReason", "usage", "info" })
 public class CompletionResponse {
 
 	/**
@@ -71,6 +76,17 @@ public class CompletionResponse {
 	public ContentWrapper response;
 
 	/**
+	 * Optional reasoning or thinking process behind the response.
+	 * <p>
+	 * This field may contain additional context or explanation about how the
+	 * response was generated, if provided by the model. It is not always present
+	 * and may be {@code null} for many responses.
+	 * </p>
+	 */
+	@JsonAlias({ "reasoning", "reasoning_content", "thinking", "think" })
+	public String reasoning; // optional reasoning or thinking process
+
+	/**
 	 * The reason why the response generation was terminated.
 	 * <p>
 	 * This field indicates how the response generation ended. Common values
@@ -103,7 +119,33 @@ public class CompletionResponse {
 	 * and request parameters used.
 	 * </p>
 	 */
-	private Map<String, Object> info;
+	private MapParam info;
+
+	/**
+	 * Completion usage statistics.
+	 * May contain:
+	 * <li>"prompt_tokens" ,
+	 * <li>"completion_tokens",
+	 * <li>"total_tokens"
+	 */
+	private MapParam usage; // for any custom data
+
+	/**
+	 * Retrieves the model name used for generating the response.
+	 * <p>
+	 * This method checks if the {@code info} map contains a key named "model"
+	 * and returns its value as a string. If the key is not present or the
+	 * {@code info} map is null, it returns {@code null}.
+	 * </p>
+	 * 
+	 * @return the model name as a string, or null if not available
+	 */
+	public String getModel() {
+		if (this.info != null && this.info.containsKey("model")) {
+			return this.info.get("model").toString();
+		}
+		return null;
+	}
 
 	/**
 	 * Retrieves the text content from the response if available.
@@ -115,6 +157,7 @@ public class CompletionResponse {
 	 * 
 	 * @return the text content of the response, or null if not applicable
 	 */
+	@JsonIgnore
 	public String getText() {
 		if (this.response != null && this.response.getType() == ContentType.TEXT) {
 			return response.getText();
@@ -127,6 +170,29 @@ public class CompletionResponse {
 	 * 
 	 * @return
 	 */
+	@JsonIgnore
 	public Object getContent() { return this.response != null ? this.response.getContent() : null; }
+
+	/**
+	 * Returns a JSON string representation of the CompletionResponse object.
+	 */
+	@Override
+	public String toString() {
+		var mapper = Utils.createJsonMapper();
+		try {
+			return mapper.writeValueAsString(this);
+		} catch (Exception e) {
+
+		}
+		return "CompletionResponse{chatId="
+		            + chatId
+		            + ", response="
+		            + response
+		            + ", endReason="
+		            + endReason
+		            + ", info="
+		            + info
+		            + "}";
+	}
 
 }

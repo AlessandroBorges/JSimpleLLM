@@ -76,11 +76,12 @@ class OpenAIIntegrationTest extends OpenAILLMServiceTestBase {
         
         System.out.println("4. Math completion: " + response3.getResponse().getText());
         
+        MapParam param = new MapParam();
+		param.model("text-embedding-3-small");
         // Step 5: Test embeddings
-        float[] embeddings = llmService.embeddings(
+        float[] embeddings = llmService.embeddings(null,
             "Tokyo is the capital of Japan.", 
-            "text-embedding-3-small", 
-            null
+            param
         );
         
         assertNotNull(embeddings);
@@ -200,12 +201,10 @@ class OpenAIIntegrationTest extends OpenAILLMServiceTestBase {
         System.out.println("1. GPT-4o-mini response:");
         System.out.println("   " + response1.getResponse().getText());
         
+        MapParam params2 = new MapParam();
+        params2.put("model", "text-embedding-3-small");	
         // Test embeddings with the same content
-        float[] embeddings = llmService.embeddings(
-            query, 
-            "text-embedding-3-small", 
-            null
-        );
+		float[] embeddings = llmService.embeddings(null, query, params2);
         
         assertNotNull(embeddings);
         System.out.println("2. Generated embeddings for query");
@@ -256,8 +255,11 @@ class OpenAIIntegrationTest extends OpenAILLMServiceTestBase {
         assertTrue(chatResponse.getResponse().getText().contains("4"));
         System.out.println("3. Empty chat handled: " + chatResponse.getResponse().getText());
         
+        MapParam param = new MapParam();
+        param.model("text-embedding-3-small");
+        
         // Test 4: Embeddings with short text
-        float[] shortEmbeddings = llmService.embeddings("Hi", null, null);
+        float[] shortEmbeddings = llmService.embeddings(null, "Hi", param);
         assertNotNull(shortEmbeddings);
         assertTrue(shortEmbeddings.length > 0);
         System.out.println("4. Short text embeddings: " + shortEmbeddings.length + " dimensions");

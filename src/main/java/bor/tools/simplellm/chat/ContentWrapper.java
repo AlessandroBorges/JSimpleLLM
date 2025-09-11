@@ -1,11 +1,9 @@
-package bor.tools.simplellm;
+package bor.tools.simplellm.chat;
 
 import lombok.Data;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import bor.tools.simplellm.chat.Message;
 
 /**
  * Encapsula diferentes tipos de conteúdo para permitir comunicação multimodal com modelos de linguagem.

@@ -3,18 +3,18 @@
  */
 package bor.tools.simplellm.impl;
 
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.BATCH;
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.CODING;
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.EMBEDDING;
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.EMBEDDING_DIMENSION;
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.FAST;
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.GPT5_CLASS;
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.IMAGE;
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.LANGUAGE;
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.REASONING;
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.RESPONSES_API;
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.TOOLS;
-import static bor.tools.simplellm.LLMConfig.MODEL_TYPE.VISION;
+import static bor.tools.simplellm.Model_Type.BATCH;
+import static bor.tools.simplellm.Model_Type.CODING;
+import static bor.tools.simplellm.Model_Type.EMBEDDING;
+import static bor.tools.simplellm.Model_Type.EMBEDDING_DIMENSION;
+import static bor.tools.simplellm.Model_Type.FAST;
+import static bor.tools.simplellm.Model_Type.GPT5_CLASS;
+import static bor.tools.simplellm.Model_Type.IMAGE;
+import static bor.tools.simplellm.Model_Type.LANGUAGE;
+import static bor.tools.simplellm.Model_Type.REASONING;
+import static bor.tools.simplellm.Model_Type.RESPONSES_API;
+import static bor.tools.simplellm.Model_Type.TOOLS;
+import static bor.tools.simplellm.Model_Type.VISION;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -27,15 +27,18 @@ import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
 
 import bor.tools.simplellm.CompletionResponse;
-import bor.tools.simplellm.ContentType;
-import bor.tools.simplellm.ContentWrapper;
 import bor.tools.simplellm.LLMConfig;
 import bor.tools.simplellm.LLMService;
 import bor.tools.simplellm.MapModels;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model;
+import bor.tools.simplellm.ModelEmbedding;
+import bor.tools.simplellm.ModelEmbedding.Emb_Operation;
+import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.ResponseStream;
 import bor.tools.simplellm.chat.Chat;
+import bor.tools.simplellm.chat.ContentType;
+import bor.tools.simplellm.chat.ContentWrapper;
 import bor.tools.simplellm.chat.Message;
 import bor.tools.simplellm.chat.MessageRole;
 import bor.tools.simplellm.exceptions.LLMAuthenticationException;
@@ -49,6 +52,9 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the LLMService interface for OpenAI's Large Language Model
@@ -75,18 +81,25 @@ import okhttp3.ResponseBody;
  */
 public class OpenAILLMService implements LLMService {
 
-	public static final String FAST_MODEL = "gpt-4.1-mini";
+	Logger logger = LoggerFactory.getLogger(OpenAILLMService.class.getName());
 
-	protected static final MapModels defaultModelMap;
+	protected static final String DEFAULT_PROMPT =
+	            "You are a helpful assistant who responds in the same language used as input.";
 
-	protected static final LLMConfig defaultLLMConfig;
+	private static final String DEFAULT_MODEL = "gpt-4.1-mini";
+
+	private static final LLMConfig defaultLLMConfig;
 
 	static {
 		MapModels map = new MapModels();
 
-		Model text_emb_3_small = new Model("text-embedding-3-small", 8000, EMBEDDING, EMBEDDING_DIMENSION, BATCH);
-		Model text_emb_2_ADA   = new Model("text-embedding-ada-002", 8000, EMBEDDING, BATCH);
-		Model gpt_5_nano       = new Model("gpt-5-nano",
+		Model text_emb_3_small =
+		            new ModelEmbedding("text-embedding-3-small", "3-small", 8000, EMBEDDING, EMBEDDING_DIMENSION, BATCH);
+		Model text_emb_3_large =
+		            new ModelEmbedding("text-embedding-3-large", "3-large", 8000, EMBEDDING, EMBEDDING_DIMENSION, BATCH);
+		Model text_emb_2_ADA   = new ModelEmbedding("text-embedding-ada-002", "ada-002", 8000, EMBEDDING, BATCH);
+
+		Model gpt_5_nano  = new Model("gpt-5-nano",
 		            400000,
 		            GPT5_CLASS,
 		            LANGUAGE,
@@ -96,7 +109,7 @@ public class OpenAILLMService implements LLMService {
 		            BATCH,
 		            TOOLS,
 		            RESPONSES_API);
-		Model gpt_5_mini       = new Model("gpt-5-mini",
+		Model gpt_5_mini  = new Model("gpt-5-mini",
 		            400000,
 		            GPT5_CLASS,
 		            REASONING,
@@ -107,7 +120,7 @@ public class OpenAILLMService implements LLMService {
 		            BATCH,
 		            TOOLS,
 		            RESPONSES_API);
-		Model gpt_5            = new Model("gpt-5",
+		Model gpt_5       = new Model("gpt-5",
 		            400000,
 		            GPT5_CLASS,
 		            REASONING,
@@ -117,12 +130,11 @@ public class OpenAILLMService implements LLMService {
 		            BATCH,
 		            TOOLS,
 		            RESPONSES_API);
-		Model gpt_4_1          = new Model("gpt-4.1", 1047576, LANGUAGE, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
-		Model gpt_4_mini       =
+		Model gpt_4_1     = new Model("gpt-4.1", 1047576, LANGUAGE, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
+		Model gpt_4_mini  =
 		            new Model("gpt-4.1-mini", 1047576, LANGUAGE, FAST, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
-		Model gpt_4o_mini      =
-		            new Model("gpt-4o-mini", 128000, LANGUAGE, FAST, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
-		Model gpt_o3_mini      = new Model("o3-mini",
+		Model gpt_4o_mini = new Model("gpt-4o-mini", 128000, LANGUAGE, FAST, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
+		Model gpt_o3_mini = new Model("o3-mini",
 		            128000,
 		            GPT5_CLASS,
 		            REASONING,
@@ -137,19 +149,22 @@ public class OpenAILLMService implements LLMService {
 		Model dall_e_3 = new Model("dall-e-3", 4000, IMAGE); // 4000 character prompt limit
 		Model dall_e_2 = new Model("dall-e-2", 1000, IMAGE); // 1000 character prompt limit
 
-		map.put(gpt_5_nano.getName(), gpt_5_nano);
-		map.put(gpt_5_mini.getName(), gpt_5_mini);
-		map.put(gpt_5.getName(), gpt_5);
-		map.put(gpt_4_1.getName(), gpt_4_1);
-		map.put(gpt_4o_mini.getName(), gpt_4o_mini);
-		map.put(gpt_4_mini.getName(), gpt_4_mini);
-		map.put(text_emb_3_small.getName(), text_emb_3_small);
-		map.put(text_emb_2_ADA.getName(), text_emb_2_ADA);
-		map.put(gpt_o3_mini.getName(), gpt_o3_mini);
-		map.put(dall_e_3.getName(), dall_e_3);
-		map.put(dall_e_2.getName(), dall_e_2);
+		map.add(gpt_4o_mini);
+		map.add(gpt_4_mini);
+		map.add(gpt_4_1);		
+		
+		map.add(gpt_5_nano);
+		map.add(gpt_5_mini);
+		map.add(gpt_5);
 
-		defaultModelMap = map;
+		map.add(gpt_o3_mini);
+		map.add(dall_e_3);
+		map.add(dall_e_2);
+		
+		// embedding models
+		map.add(text_emb_3_small);
+		map.add(text_emb_2_ADA);
+		map.add(text_emb_3_large);
 
 		defaultLLMConfig = LLMConfig.builder()
 		            .apiTokenEnvironment("OPENAI_API_KEY")
@@ -295,7 +310,7 @@ public class OpenAILLMService implements LLMService {
 					} catch (Exception ignored) {
 						// Fall through to generic error
 					}
-					throw new LLMException("API request failed with status: "
+					throw new LLMException("API request failed with status: \n\t"
 					            + response.code()
 					            + " - "
 					            + responseText);
@@ -353,15 +368,25 @@ public class OpenAILLMService implements LLMService {
 	 * </p>
 	 */
 	@Override
-	public float[] embeddings(String texto, String model, Integer vecSize) throws LLMException {
+	public float[] embeddings(Emb_Operation op, String texto, MapParam params) throws LLMException {
 
 		if (texto == null || texto.trim().isEmpty()) {
 			throw new LLMException("Text cannot be null or empty");
 		}
-
+		if(params==null || params.isEmpty()) {
+		  throw new LLMException("params cannot be null or empty");
+		}		
+		
+        Object modelObj = params.getModel();
+        if(modelObj==null) {
+			throw new LLMException("Model must be specified in parameters for embeddings.");
+		}
+        
+        Model model = (Model) getLLMConfig().getModel(modelObj.toString());
+        
 		// Use default model if not specified
-		if (model == null || model.trim().isEmpty()) {
-			model = "text-embedding-3-small";
+		if (model == null || model.toString().trim().isEmpty()) {
+			throw new LLMException("Model must be specified in parameters for embeddings.");
 		}
 
 		if (isModelType(model, EMBEDDING) == false) {
@@ -369,8 +394,9 @@ public class OpenAILLMService implements LLMService {
 			            + model
 			            + ". Use a dedicated embedding model like text-embedding-3-small.");
 		}
-
-		if (isModelType(model, EMBEDDING_DIMENSION) == false && vecSize != null) {
+		
+		Integer dimensions = params.getDimension();	
+		if (isModelType(model, EMBEDDING_DIMENSION) == false && dimensions != null) {
 			throw new LLMException("Model "
 			            + model
 			            + " does not support custom embedding dimensions.");
@@ -382,19 +408,27 @@ public class OpenAILLMService implements LLMService {
 		}
 
 		try {
+			if (model instanceof ModelEmbedding) {
+				ModelEmbedding me = (ModelEmbedding) model;
+				texto = me.applyOperationPrefix(op, texto);
+			} else {
+				logger.warn("Model {} is not a ModelEmbedding instance", model);
+			}
 
 			// Create request payload
-			Map<String, Object> payload = jsonMapper.toEmbeddingsRequest(texto.trim(), model, vecSize, encodingFormat);
+			Map<String, Object> payload = jsonMapper.toEmbeddingsRequest(texto.trim(), model, dimensions, encodingFormat);
 
 			// Make API request
 			Map<String, Object> response = postRequest("embeddings", payload);
 
 			// Convert response to float array
-			return jsonMapper.fromEmbeddingsResponse(response);
+			return jsonMapper.fromEmbeddingsResponse(response, dimensions);
 
 		} catch (LLMException e) {
+			logger.error("Error generating embeddings: {}", e.getMessage());
 			throw e;
 		} catch (Exception e) {
+			logger.error("Unexpected error generating embeddings: {}", e.getMessage(), e);
 			throw new LLMException("Unexpected error during embeddings generation: "
 			            + e.getMessage(), e);
 		}
@@ -569,7 +603,6 @@ public class OpenAILLMService implements LLMService {
 	 * 
 	 * @throws LLMException if parsing fails
 	 */
-	@SuppressWarnings("unchecked")
 	protected CompletionResponse parseResponsesAPIResponse(Map<String, Object> response) throws LLMException {
 		CompletionResponse completionResponse = new CompletionResponse();
 
@@ -589,7 +622,7 @@ public class OpenAILLMService implements LLMService {
 			}
 
 			// Extract metadata
-			Map<String, Object> info = new HashMap<>();
+			MapParam info = new MapParam();
 			info.putAll(response);
 			completionResponse.setInfo(info);
 
@@ -639,11 +672,16 @@ public class OpenAILLMService implements LLMService {
 
 			// Convert response
 			CompletionResponse completionResponse = jsonMapper.fromChatCompletionResponse(response);
-			completionResponse.setChatId(chat.getId());
+			if (chat.getId() == null) {
+				chat.setId(completionResponse.getChatId());
+			} else {
+				completionResponse.setChatId(chat.getId());
+			}
 
 			// Add the user query to chat if provided
 			if (query != null && !query.trim().isEmpty()) {
-				chat.addUserMessage(query.trim());
+				var usage = completionResponse.getUsage();
+				chat.addUserMessage(query.trim(), usage);
 			}
 
 			// Add assistant response to chat
@@ -978,7 +1016,11 @@ public class OpenAILLMService implements LLMService {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public String getDefaultModelName() { return FAST_MODEL; }
+	public String getDefaultModelName() {
+		var txt = getLLMConfig().getModelMap().getModel(DEFAULT_MODEL);
+
+		return txt != null ? txt.getName() : DEFAULT_MODEL;
+	}
 
 	// ================== IMAGE GENERATION METHODS ==================
 
@@ -992,12 +1034,12 @@ public class OpenAILLMService implements LLMService {
 		}
 
 		params = fixParams(params);
-		
+
 		// Ensure we have an image generation model
 		String model = findModel(params);
-		if (model != null && !isModelType(model, LLMConfig.MODEL_TYPE.IMAGE)) {
+		if (model != null && !isModelType(model, Model_Type.IMAGE)) {
 			// Try to find a suitable image generation model
-			Model imageModel = findModel(LLMConfig.MODEL_TYPE.IMAGE);
+			Model imageModel = findModel(Model_Type.IMAGE);
 			if (imageModel != null) {
 				params.put("model", imageModel.getName());
 			} else {
@@ -1008,17 +1050,18 @@ public class OpenAILLMService implements LLMService {
 		try {
 			// Create request payload
 			Map<String, Object> payload = jsonMapper.toImageGenerationRequest(prompt, params);
-			
+
 			// Make API request to images/generations endpoint
 			Map<String, Object> response = postRequest("/images/generations", payload);
-			
+
 			// Convert response
 			return jsonMapper.fromImageGenerationResponse(response);
-			
+
 		} catch (LLMException e) {
 			throw e;
 		} catch (Exception e) {
-			throw new LLMException("Unexpected error during image generation: " + e.getMessage(), e);
+			throw new LLMException("Unexpected error during image generation: "
+			            + e.getMessage(), e);
 		}
 	}
 
@@ -1026,7 +1069,8 @@ public class OpenAILLMService implements LLMService {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public CompletionResponse editImage(byte[] originalImage, String prompt, byte[] maskImage, MapParam params) throws LLMException {
+	public CompletionResponse editImage(byte[] originalImage, String prompt, byte[] maskImage, MapParam params)
+	            throws LLMException {
 		if (originalImage == null || originalImage.length == 0) {
 			throw new LLMException("Original image data cannot be null or empty");
 		}
@@ -1037,20 +1081,22 @@ public class OpenAILLMService implements LLMService {
 		params = fixParams(params);
 
 		try {
-			// Create request payload (note: actual multipart handling would be in postMultipartRequest)
+			// Create request payload (note: actual multipart handling would be in
+			// postMultipartRequest)
 			Map<String, Object> payload = jsonMapper.toImageEditRequest(originalImage, prompt, maskImage, params);
-			
+
 			// Make API request to images/edits endpoint
 			// Note: This would require a special multipart request method
 			Map<String, Object> response = postMultipartRequest("/images/edits", payload);
-			
-			// Convert response  
+
+			// Convert response
 			return jsonMapper.fromImageGenerationResponse(response);
-			
+
 		} catch (LLMException e) {
 			throw e;
 		} catch (Exception e) {
-			throw new LLMException("Unexpected error during image editing: " + e.getMessage(), e);
+			throw new LLMException("Unexpected error during image editing: "
+			            + e.getMessage(), e);
 		}
 	}
 
@@ -1068,26 +1114,28 @@ public class OpenAILLMService implements LLMService {
 		try {
 			// Create request payload
 			Map<String, Object> payload = jsonMapper.toImageVariationRequest(originalImage, params);
-			
+
 			// Make API request to images/variations endpoint
 			Map<String, Object> response = postMultipartRequest("/images/variations", payload);
-			
+
 			// Convert response
 			return jsonMapper.fromImageGenerationResponse(response);
-			
+
 		} catch (LLMException e) {
 			throw e;
 		} catch (Exception e) {
-			throw new LLMException("Unexpected error during image variation: " + e.getMessage(), e);
+			throw new LLMException("Unexpected error during image variation: "
+			            + e.getMessage(), e);
 		}
 	}
 
 	/**
 	 * Helper method to handle multipart requests for image upload endpoints.
-	 * This is a placeholder - full implementation would require OkHttp multipart support.
+	 * This is a placeholder - full implementation would require OkHttp multipart
+	 * support.
 	 * 
 	 * @param endpoint the API endpoint
-	 * @param payload the request payload containing image data and parameters
+	 * @param payload  the request payload containing image data and parameters
 	 * 
 	 * @return response Map
 	 * 
@@ -1096,8 +1144,9 @@ public class OpenAILLMService implements LLMService {
 	private Map<String, Object> postMultipartRequest(String endpoint, Map<String, Object> payload) throws LLMException {
 		// TODO: Implement full multipart/form-data support with OkHttp
 		// For now, throw an informative exception
-		throw new LLMException("Image editing and variations require multipart upload support, which is not yet implemented. " +
-							  "Only image generation from text prompts is currently supported.");
+		throw new LLMException(
+		            "Image editing and variations require multipart upload support, which is not yet implemented. "
+		                        + "Only image generation from text prompts is currently supported.");
 	}
 
 }

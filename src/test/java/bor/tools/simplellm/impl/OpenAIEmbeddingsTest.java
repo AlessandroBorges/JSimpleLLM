@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import bor.tools.simplellm.MapParam;
+import bor.tools.simplellm.ModelEmbedding.Emb_Operation;
 import bor.tools.simplellm.exceptions.LLMException;
 
 /**
@@ -21,9 +23,10 @@ class OpenAIEmbeddingsTest extends OpenAILLMServiceTestBase {
 		// Given
 		String text  = "Hello, this is a test sentence for embedding generation.";
 		String model = "text-embedding-3-small";
-
+        MapParam param = new MapParam();
+        param.model(model);
 		// When
-		float[] embeddings = llmService.embeddings(text, model, null);
+		float[] embeddings = llmService.embeddings(Emb_Operation.DOCUMENT,text, param);
 
 		// Then
 		assertNotNull(embeddings, "Embeddings should not be null");
@@ -58,9 +61,9 @@ class OpenAIEmbeddingsTest extends OpenAILLMServiceTestBase {
 	void testEmbeddingsWithDefaultModel() throws LLMException {
 		// Given
 		String text = "This is another test sentence.";
-
+        MapParam param = new MapParam();
 		// When - using null model should use default
-		float[] embeddings = llmService.embeddings(text, null, null);
+		float[] embeddings = llmService.embeddings(Emb_Operation.DOCUMENT,text,param);
 
 		// Then
 		assertNotNull(embeddings, "Embeddings should not be null");
@@ -78,9 +81,12 @@ class OpenAIEmbeddingsTest extends OpenAILLMServiceTestBase {
 		String  text             = "Test text for custom dimensions.";
 		String  model            = "text-embedding-3-small";
 		Integer customDimensions = 512;  // Custom dimension size
-
+		
+		MapParam param = new MapParam();
+		param.model(model);
+		param.dimension(customDimensions);
 		// When
-		float[] embeddings = llmService.embeddings(text, model, customDimensions);
+		float[] embeddings = llmService.embeddings(Emb_Operation.DOCUMENT,text,param);
 
 		// Then
 		assertNotNull(embeddings, "Embeddings should not be null");
@@ -98,11 +104,13 @@ class OpenAIEmbeddingsTest extends OpenAILLMServiceTestBase {
 		String text1 = "O gato está dormindo no carpete.";//
 		String text2 = "Um gato esta descansando no tapete";                                                                                // rug.";
 		String text3 = "O tempo está ensolarado hoje!";// "The weather is sunny today.";
-
+		MapParam param = new MapParam();
+		param.model("text-embedding-3-small");
+		param.dimension(512);
 		// When
-		float[] embeddings1 = llmService.embeddings(text1, "text-embedding-3-small", 512);
-		float[] embeddings2 = llmService.embeddings(text2, "text-embedding-3-small", 512);
-		float[] embeddings3 = llmService.embeddings(text3, "text-embedding-3-small", 512);
+		float[] embeddings1 = llmService.embeddings(Emb_Operation.DOCUMENT,text1,param);
+		float[] embeddings2 = llmService.embeddings(Emb_Operation.DOCUMENT,text2,param);
+		float[] embeddings3 = llmService.embeddings(Emb_Operation.DOCUMENT,text3,param);
 
 		// Then
 		double similarity12 = cosineSimilarity(embeddings1, embeddings2);
@@ -131,11 +139,13 @@ class OpenAIEmbeddingsTest extends OpenAILLMServiceTestBase {
 		String longText   = "This is a much longer text that contains multiple sentences. "
 		            + "It should still generate meaningful embeddings despite its length. "
 		            + "The embedding model should be able to handle various text lengths effectively.";
-
+		
+		MapParam param = new MapParam();
+		param.model("text-embedding-3-small");
 		// When
-		float[] shortEmbeddings  = llmService.embeddings(shortText, "text-embedding-3-small", null);
-		float[] mediumEmbeddings = llmService.embeddings(mediumText, "text-embedding-3-small", null);
-		float[] longEmbeddings   = llmService.embeddings(longText, "text-embedding-3-small", null);
+		float[] shortEmbeddings  = llmService.embeddings(Emb_Operation.DOCUMENT,shortText, param);
+		float[] mediumEmbeddings = llmService.embeddings(Emb_Operation.DOCUMENT, mediumText, param);
+		float[] longEmbeddings   = llmService.embeddings(Emb_Operation.DOCUMENT,longText, param);
 
 		// Then
 		assertEquals(shortEmbeddings.length, mediumEmbeddings.length, "All embeddings should have same dimensions");
@@ -151,31 +161,36 @@ class OpenAIEmbeddingsTest extends OpenAILLMServiceTestBase {
 	void testEmbeddingsWithEmptyText() {
 		// Given
 		String emptyText = "";
-
+		MapParam param = new MapParam();
+		param.model("text-embedding-3-small");
 		// When & Then
 		assertThrows(LLMException.class,
-		             () -> { llmService.embeddings(emptyText, "text-embedding-3-small", null); },
+		             () -> { llmService.embeddings(Emb_Operation.DOCUMENT,emptyText, param); },
 		             "Should throw exception for empty text");
 	}
 
 	@Test
 	@DisplayName("Test embeddings error handling with null text")
 	void testEmbeddingsWithNullText() {
+		MapParam param = new MapParam();
+		param.model("text-embedding-3-small");
 		// When & Then
 		assertThrows(LLMException.class,
-		             () -> { llmService.embeddings(null, "text-embedding-3-small", null); },
+		             () -> { llmService.embeddings(Emb_Operation.DOCUMENT,null, param); },
 		             "Should throw exception for null text");
 	}
 
 	@Test
 	@DisplayName("Test embeddings with special characters")
 	void testEmbeddingsWithSpecialCharacters() throws LLMException {
+		MapParam param = new MapParam();
+		param.model("text-embedding-3-small");
 		// Given
 		String textWithSpecialChars = "Hello! This text contains special characters: @#$%^&*()_+ "
 		            + "and unicode: αβγδε 中文 🚀🔥💡";
 
 		// When
-		float[] embeddings = llmService.embeddings(textWithSpecialChars, "text-embedding-3-small", null);
+		float[] embeddings = llmService.embeddings(null, textWithSpecialChars, param);
 
 		// Then
 		assertNotNull(embeddings, "Embeddings should be generated for text with special characters");

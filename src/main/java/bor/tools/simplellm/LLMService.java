@@ -2,8 +2,9 @@ package bor.tools.simplellm;
 
 import java.util.List;
 
-import bor.tools.simplellm.LLMConfig.MODEL_TYPE;
+import bor.tools.simplellm.ModelEmbedding.Emb_Operation;
 import bor.tools.simplellm.chat.Chat;
+import bor.tools.simplellm.chat.ContentWrapper;
 import bor.tools.simplellm.exceptions.LLMException;
 
 /**
@@ -37,7 +38,12 @@ public interface LLMService {
 	 * @see Model
 	 */
 	List<Model> models() throws LLMException;
+	
+	default List<String> modelNames() throws LLMException {
+		return models().stream().map(m -> m.getName()).toList();
+	}
 
+	
 	/**
 	 * Generates embeddings for the given text using the specified model.
 	 * <p>
@@ -46,16 +52,37 @@ public interface LLMService {
 	 * and can be used for similarity comparisons, clustering, and other NLP tasks.
 	 * </p>
 	 *
-	 * @param texto   the text to generate embeddings for
-	 * @param model   the embedding model to use
-	 * @param vecSize the desired size of the embedding vector, or null for model
-	 *                default
+	 * @param texto the text to generate embeddings for
+	 * @param model the embedding model to use
 	 * 
 	 * @return an array of floats representing the text embedding
 	 * 
 	 * @throws LLMException if there's an error generating the embeddings
 	 */
-	float[] embeddings(String texto, String model, Integer vecSize) throws LLMException;
+	default float[] embeddings(String texto, Model model) throws LLMException {
+		MapParam params = new MapParam();
+		params.put("model", model);
+		
+		if (model != null && model.getTypes().contains(Model_Type.EMBEDDING)) {
+			return embeddings(Emb_Operation.DEFAULT, texto, params);
+		} else {
+			throw new LLMException("Model " + (model != null ? model.getName() : "null") + " is not an EMBEDDING model");
+		}		
+	}
+
+	/**
+	 * Generates embeddings for the given text using the specified model and
+	 * operation.
+	 * 
+	 * @param op - Embedding operations 
+	 * @param texto - text to embed
+	 * @param params additional parameters such as model name, vector size, etc.
+	 * 
+	 * @return an normalized array of floats representing the text embedding
+	 * 
+	 * @throws LLMException
+	 */
+	float[] embeddings(Emb_Operation op, String texto, MapParam params) throws LLMException;
 
 	/**
 	 * Performs a simple text completion using the specified system prompt and user
@@ -136,16 +163,20 @@ public interface LLMService {
 	// ================== IMAGE GENERATION METHODS ==================
 
 	/**
-	 * Generates one or more images from a text prompt using an image generation model.
+	 * Generates one or more images from a text prompt using an image generation
+	 * model.
 	 * <p>
-	 * This method creates images based on descriptive text input. The generated images
-	 * can be returned as URLs or base64-encoded data, depending on the response format
+	 * This method creates images based on descriptive text input. The generated
+	 * images
+	 * can be returned as URLs or base64-encoded data, depending on the response
+	 * format
 	 * specified in the parameters.
 	 * </p>
 	 * <p>
 	 * Common parameters include:
 	 * <ul>
-	 * <li>{@code model} - Image generation model (e.g., "dall-e-3", "dall-e-2")</li>
+	 * <li>{@code model} - Image generation model (e.g., "dall-e-3",
+	 * "dall-e-2")</li>
 	 * <li>{@code size} - Image dimensions (e.g., "1024x1024", "512x512")</li>
 	 * <li>{@code quality} - Image quality ("standard", "hd")</li>
 	 * <li>{@code n} - Number of images to generate (1-10)</li>
@@ -155,22 +186,27 @@ public interface LLMService {
 	 * </p>
 	 *
 	 * @param prompt the text description of the desired image(s)
-	 * @param params additional parameters such as size, quality, number of images, etc.
+	 * @param params additional parameters such as size, quality, number of images,
+	 *               etc.
 	 * 
-	 * @return CompletionResponse containing the generated image(s) as ContentWrapper.ImageContent
+	 * @return CompletionResponse containing the generated image(s) as
+	 *         ContentWrapper.ImageContent
 	 * 
-	 * @throws LLMException if the model doesn't support image generation or there's an API error
+	 * @throws LLMException if the model doesn't support image generation or there's
+	 *                      an API error
 	 * 
 	 * @see ContentWrapper.ImageContent
-	 * @see LLMConfig.MODEL_TYPE#IMAGE
+	 * @see Model_Type#IMAGE
 	 */
 	CompletionResponse generateImage(String prompt, MapParam params) throws LLMException;
 
 	/**
 	 * Edits an existing image based on a text prompt and an optional mask.
 	 * <p>
-	 * This method modifies parts of an existing image according to the text description.
-	 * A mask can be provided to specify which areas should be edited (transparent areas
+	 * This method modifies parts of an existing image according to the text
+	 * description.
+	 * A mask can be provided to specify which areas should be edited (transparent
+	 * areas
 	 * in the mask will be edited, opaque areas will be preserved).
 	 * </p>
 	 * <p>
@@ -183,39 +219,50 @@ public interface LLMService {
 	 * </p>
 	 *
 	 * @param originalImage the original image data as byte array (PNG format)
-	 * @param prompt the text description of the desired edit
-	 * @param maskImage optional mask image as byte array (PNG with transparency)
-	 * @param params additional parameters such as size, number of images, etc.
+	 * @param prompt        the text description of the desired edit
+	 * @param maskImage     optional mask image as byte array (PNG with
+	 *                      transparency)
+	 * @param params        additional parameters such as size, number of images,
+	 *                      etc.
 	 * 
-	 * @return CompletionResponse containing the edited image(s) as ContentWrapper.ImageContent
+	 * @return CompletionResponse containing the edited image(s) as
+	 *         ContentWrapper.ImageContent
 	 * 
-	 * @throws LLMException if the model doesn't support image editing or there's an API error
+	 * @throws LLMException if the model doesn't support image editing or there's an
+	 *                      API error
 	 * 
 	 * @see ContentWrapper.ImageContent
 	 */
-	CompletionResponse editImage(byte[] originalImage, String prompt, byte[] maskImage, MapParam params) throws LLMException;
+	CompletionResponse editImage(byte[] originalImage, String prompt, byte[] maskImage, MapParam params)
+	            throws LLMException;
 
 	/**
 	 * Creates variations of an existing image.
 	 * <p>
-	 * This method generates new images that are similar to the provided original image
-	 * but with variations in style, composition, or other aspects. No text prompt is
+	 * This method generates new images that are similar to the provided original
+	 * image
+	 * but with variations in style, composition, or other aspects. No text prompt
+	 * is
 	 * required - variations are based solely on the visual content of the original.
 	 * </p>
 	 * <p>
 	 * Requirements:
 	 * <ul>
 	 * <li>Image must be PNG format, less than 4MB, and square</li>
-	 * <li>Supported sizes depend on the model (typically 256x256, 512x512, 1024x1024)</li>
+	 * <li>Supported sizes depend on the model (typically 256x256, 512x512,
+	 * 1024x1024)</li>
 	 * </ul>
 	 * </p>
 	 *
 	 * @param originalImage the original image data as byte array (PNG format)
-	 * @param params additional parameters such as size, number of variations, etc.
+	 * @param params        additional parameters such as size, number of
+	 *                      variations, etc.
 	 * 
-	 * @return CompletionResponse containing the image variation(s) as ContentWrapper.ImageContent
+	 * @return CompletionResponse containing the image variation(s) as
+	 *         ContentWrapper.ImageContent
 	 * 
-	 * @throws LLMException if the model doesn't support image variations or there's an API error
+	 * @throws LLMException if the model doesn't support image variations or there's
+	 *                      an API error
 	 * 
 	 * @see ContentWrapper.ImageContent
 	 */
@@ -288,29 +335,7 @@ public interface LLMService {
 	 */
 	LLMConfig getLLMConfig();
 
-	/**
-	 * Checks if the specified model supports the given type of operation.
-	 * <p>
-	 * This method verifies whether a model is capable of performing tasks such as
-	 * completion, chat, or embeddings based on its configured types.
-	 * </p>
-	 *
-	 * @param modelName the name of the model to check
-	 * @param type      the type of operation to verify (e.g., COMPLETION, CHAT,
-	 *                  EMBEDDINGS)
-	 * 
-	 * @return true if the model supports the specified type, false otherwise
-	 * 
-	 * @see LLMConfig.MODEL_TYPE
-	 */
-	default boolean isModelType(String modelName, MODEL_TYPE type) {
-		LLMConfig config = getLLMConfig();
-		Model     model  = config.getModelMap().get(modelName);
-		if (model != null) {
-			return model.getTypes().contains(type);
-		}
-		return false;
-	}
+	
 
 	String getDefaultModelName();
 
@@ -350,12 +375,12 @@ public interface LLMService {
 	 * @return the Model that best matches the specified types, or null if no model
 	 *         matches
 	 * 
-	 * @see LLMConfig.MODEL_TYPE
+	 * @see Model_Type
 	 * @see Model
-	 * @see MODEL_TYPE
+	 * @see Model_Type
 	 * @see LLMConfig
 	 */
-	default Model findModel(MODEL_TYPE... types) {
+	default Model findModel(Model_Type... types) {
 		MapModels models   = getLLMConfig().getModelMap();
 		Model     selected = null;
 		int       maxNota  = 0;
@@ -387,16 +412,41 @@ public interface LLMService {
 	 * 
 	 * @return true if the model supports the specified type, false otherwise
 	 * 
-	 * @see LLMConfig.MODEL_TYPE
+	 * @see Model_Type
 	 * @see Model
-	 * @see MODEL_TYPE
+	 * @see Model_Type
 	 * @see LLMConfig
 	 */
-	default boolean isModelType(Model model, MODEL_TYPE type) {
+	default boolean isModelType(Model model, Model_Type type) {
 		if (model != null) {
 			return model.getTypes().contains(type);
 		}
 		return false;
 	}
+	
+	/**
+	 * Checks if the specified model supports the given type of operation.
+	 * <p>
+	 * This method verifies whether a model is capable of performing tasks such as
+	 * completion, chat, or embeddings based on its configured types.
+	 * </p>
+	 *
+	 * @param modelName the name of the model to check
+	 * @param type      the type of operation to verify (e.g., COMPLETION, CHAT,
+	 *                  EMBEDDINGS)
+	 * 
+	 * @return true if the model supports the specified type, false otherwise
+	 * 
+	 * @see Model_Type
+	 */
+	default boolean isModelType(String modelName, Model_Type type) {
+		LLMConfig config = getLLMConfig();
+		Model     model  = config.getModelMap().get(modelName);
+		if (model != null) {
+			return model.getTypes().contains(type);
+		}
+		return false;
+	}
+	
 
 }

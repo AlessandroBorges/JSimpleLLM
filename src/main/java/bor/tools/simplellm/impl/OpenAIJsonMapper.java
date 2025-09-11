@@ -10,11 +10,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import bor.tools.simplellm.CompletionResponse;
-import bor.tools.simplellm.ContentType;
-import bor.tools.simplellm.ContentWrapper;
 import bor.tools.simplellm.MapParam;
-import bor.tools.simplellm.VecUtil;
+import bor.tools.simplellm.Model;
+import bor.tools.simplellm.Utils;
 import bor.tools.simplellm.chat.Chat;
+import bor.tools.simplellm.chat.ContentType;
+import bor.tools.simplellm.chat.ContentWrapper;
 import bor.tools.simplellm.chat.Message;
 import bor.tools.simplellm.chat.MessageRole;
 import bor.tools.simplellm.exceptions.LLMException;
@@ -61,9 +62,13 @@ public class OpenAIJsonMapper {
 	public Map<String, Object> toChatCompletionRequest(Chat chat, String query, MapParam params) throws LLMException {
 		Map<String, Object> request = new HashMap<>();
 
-		String model = params.getModel();
+		Object model = params.getModel();
 		// Set model
-		request.put("model", model != null ? model : chat.getModel());
+		model = model != null ? model : chat.getModel();
+		if (model == null) {
+			throw new IllegalArgumentException("Model must be specified for chat completion request");
+		}
+		request.put("model", model.toString());
 
 		// Convert messages
 		List<Map<String, Object>> messages = new ArrayList<>();
@@ -128,16 +133,17 @@ public class OpenAIJsonMapper {
 	public Map<String, Object> toCompletionRequest(String prompt, String query, MapParam params) {
 		Map<String, Object> request = new HashMap<>();
 
-		String model = params.getModel();
+		Object model = params.getModel();
 		// Set model
-		request.put("model", model);
+		request.put("model", model.toString());
 
 		// Convert messages
 		prompt = prompt == null ? "" : prompt.trim();
 		String fullPrompt = prompt
 		            + "\n\n"
 		            + (query != null ? query.trim() : "");
-		request.put("prompt", fullPrompt);
+		
+		request.put("prompt", fullPrompt.trim());
 
 		// Add parameters from MapParam
 		if (params != null) {
@@ -189,11 +195,33 @@ public class OpenAIJsonMapper {
 				Map<String, Object> firstChoice = choices.get(0);
 				Map<String, Object> message     = (Map<String, Object>) firstChoice.get("message");
 
+				// Extract usage information and other metadata
+				MapParam info = new MapParam();
+				info.putAll(response);
+				completionResponse.setInfo(info);
+
+				// get Usage
+				MapParam usage = new MapParam((Map<String, Object>) response.get("usage"));
+				completionResponse.setUsage(usage);
+
+				// Extract message content
 				if (message != null) {
 					String content = (String) message.get("content");
 					if (content != null) {
 						completionResponse.setResponse(new ContentWrapper(ContentType.TEXT, content));
 					}
+					////////////
+					String   reasoning = null;
+					String[] keys      = { "reasoning_content", "reasoning", "thoughts", "thoughts_content", "think" };
+
+					for (String key : keys) {
+						if (message.containsKey(key)) {
+							reasoning = message.get(key).toString();
+							break;
+						}
+					}
+					completionResponse.setReasoning(reasoning);
+					/////////
 				} else {
 					// Fallback to text field for non-chat completions
 					String text = (String) firstChoice.get("text");
@@ -206,11 +234,6 @@ public class OpenAIJsonMapper {
 				String finishReason = (String) firstChoice.get("finish_reason");
 				completionResponse.setEndReason(finishReason);
 			}
-
-			// Extract usage information and other metadata
-			Map<String, Object> info = new HashMap<>();
-			info.putAll(response);
-			completionResponse.setInfo(info);
 
 		} catch (Exception e) {
 			throw new LLMException("Failed to parse OpenAI response: "
@@ -257,7 +280,7 @@ public class OpenAIJsonMapper {
 			}
 
 			// Store chunk info
-			Map<String, Object> info = new HashMap<>();
+			MapParam info = new MapParam();
 			info.putAll(chunk);
 			response.setInfo(info);
 
@@ -279,12 +302,15 @@ public class OpenAIJsonMapper {
 	 * @return request payload Map
 	 */
 	public Map<String, Object> toEmbeddingsRequest(String input,
-	                                               String model,
+	                                               Model model,
 	                                               Integer dimensions,
 	                                               String encodingFormat) {
 		Map<String, Object> request = new HashMap<>();
 		request.put("input", input);
-		request.put("model", model);
+		if (model == null) {
+			throw new IllegalArgumentException("Model must be specified for embeddings request");
+		}
+		request.put("model", model.toString());
 
 		if (dimensions != null) {
 			request.put("dimensions", dimensions);
@@ -306,34 +332,49 @@ public class OpenAIJsonMapper {
 	 * @throws LLMException if conversion fails
 	 */
 	@SuppressWarnings("unchecked")
-	public float[] fromEmbeddingsResponse(Map<String, Object> response) throws LLMException {
+	public float[] fromEmbeddingsResponse(Map<String, Object> response, Integer vecSize) throws LLMException {
 		try {
+			float[]                   vec  = null;
 			List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
 			if (data != null && !data.isEmpty()) {
 				Object embeddingObj = data.get(0).get("embedding");
+				// vanilla float array
 				if ((embeddingObj instanceof List)) {
 					// Handle list of numbers
-					List<Number> embedding = (List<Number>) data.get(0).get("embedding");
+					List<Number> embedding = (List<Number>) embeddingObj;
 					if (embedding != null) {
-						float[] result = new float[embedding.size()];
+						vec = new float[embedding.size()];
 						for (int i = 0; i < embedding.size(); i++) {
-							result[i] = embedding.get(i).floatValue();
+							vec[i] = embedding.get(i).floatValue();
 						}
 						embedding.clear();
-						result = VecUtil.normalize(result);
-						return result;
 					}
+					// base64 encoding
 				} else if (embeddingObj instanceof String) {
 					// Handle base64 encoded embeddings if returned as string
 					String base64Str = (String) embeddingObj;
-					// Decode base64 to byte array and convert to float array as needed
-					float[] vec = VecUtil.base64ToFloatArray(base64Str);
-					vec = VecUtil.normalize(vec);
+					// Decode base64 string to byte array and convert to float array as needed
+					vec = Utils.base64ToFloatArray(base64Str);
+					if (vecSize != null && vecSize > 64 && vec.length != vecSize) {
+						float[] temp = new float[vecSize];
+						System.arraycopy(vec, 0, temp, 0, Math.min(vec.length, vecSize));
+						vec = temp;
+					}
+					vec = Utils.normalize(vec);
 					return vec;
 				} else {
 					throw new LLMException("Unexpected embedding format "
 					            + embeddingObj, null);
 				}
+
+				if (vecSize != null && vecSize >= 16 && vec != null && vec.length != vecSize) {
+					float[] temp = new float[vecSize];
+					System.arraycopy(vec, 0, temp, 0, Math.min(vec.length, vecSize));
+					vec = temp;
+				}
+				// Normalize to unit 
+                vec = Utils.normalize(vec);
+                return vec;
 			} else {
 				throw new LLMException("No embedding data found in response", null);
 			}
@@ -341,7 +382,6 @@ public class OpenAIJsonMapper {
 			throw new LLMException("Failed to parse embeddings response: "
 			            + e.getMessage(), e);
 		}
-		throw new LLMException("No embedding data found in response");
 	}
 
 	/**
@@ -355,37 +395,45 @@ public class OpenAIJsonMapper {
 	 * @see Embedding#isDouble()
 	 */
 
+	@SuppressWarnings("unchecked")
 	protected final float[] convertEmbeddigsToFloats(Object embedding, boolean normalized) throws LLMException {
-		if (embedding == null) {
-			return null;
-		}
-		if (embedding instanceof String) {
-			float[] arr = VecUtil.base64ToFloatArray((String) embedding);
-			embedding = VecUtil.normalize(arr);
-			normalized = true;
-			return arr;
-		}
-		if (embedding instanceof List) {
-			List<Float> list = (List<Float>) embedding;
-			float[]     arr  = new float[list.size()];
-			for (int i = 0; i < list.size(); i++) {
-				arr[i] = list.get(i);
+		try {
+			if (embedding == null) {
+				return null;
 			}
-			var normy = VecUtil.normalize((float[]) embedding);
-			normalized = true;
-			return normy;
-		}
-		if (embedding instanceof float[]) {
-			if (normalized) {
-				return (float[]) embedding;
-			} else {
-				var normy = VecUtil.normalize((float[]) embedding);
+			if (embedding instanceof String) {
+				// base64 encoding
+				float[] arr = Utils.base64ToFloatArray((String) embedding);
+				embedding = Utils.normalize(arr);
+				normalized = true;
+				return arr;
+			}
+			if (embedding instanceof List) {
+				List<Float> list = (List<Float>) embedding;
+				float[]     arr  = new float[list.size()];
+				for (int i = 0; i < list.size(); i++) {
+					arr[i] = list.get(i);
+				}
+				list.clear();
+				var normy = Utils.normalize(arr);
 				normalized = true;
 				return normy;
 			}
-		} else {
-			throw new LLMException("Embedding  unknow: "
-			            + embedding.getClass().getName());
+			if (embedding instanceof float[]) {
+				if (normalized) {
+					return (float[]) embedding;
+				} else {
+					var normy = Utils.normalize((float[]) embedding);
+					normalized = true;
+					return normy;
+				}
+			} else {
+				throw new LLMException("Embedding  unknow: "
+				            + embedding.getClass().getName());
+			}
+		} catch (Exception e) {
+			throw new LLMException("Failed to convert embeddings: "
+			            + e.getMessage(), e);
 		}
 	}
 
@@ -456,90 +504,103 @@ public class OpenAIJsonMapper {
 			// If it's not ImageContent but has IMAGE type, try to handle it
 			if (content.getContent() instanceof String) {
 				// Assume it's a URL
-				return Map.of("type", "image_url", 
-							"image_url", Map.of("url", (String) content.getContent()));
+				return Map.of("type", "image_url", "image_url", Map.of("url", (String) content.getContent()));
 			} else if (content.getContent() instanceof byte[]) {
 				// Convert byte array to base64
 				try {
 					String base64 = Base64.getEncoder().encodeToString((byte[]) content.getContent());
-					return Map.of("type", "image_url",
-								"image_url", Map.of("url", "data:image/jpeg;base64," + base64));
+					return Map.of("type",
+					              "image_url",
+					              "image_url",
+					              Map.of("url",
+					                     "data:image/jpeg;base64,"
+					                                 + base64));
 				} catch (Exception e) {
-					throw new LLMException("Failed to encode image to base64: " + e.getMessage(), e);
+					throw new LLMException("Failed to encode image to base64: "
+					            + e.getMessage(), e);
 				}
 			}
-			throw new LLMException("Unsupported image content type: " + content.getContent().getClass().getName());
+			throw new LLMException("Unsupported image content type: "
+			            + content.getContent().getClass().getName());
 		}
-		
+
 		ContentWrapper.ImageContent imageContent = (ContentWrapper.ImageContent) content;
-		
+
 		// Handle URL-based images
 		if (imageContent.getUrl() != null) {
 			Map<String, Object> imageUrl = new HashMap<>();
 			imageUrl.put("url", imageContent.getUrl());
-			
+
 			// Add detail level if specified in metadata
 			if (imageContent.getMetadata() != null && imageContent.getMetadata().containsKey("detail")) {
 				imageUrl.put("detail", imageContent.getMetadata().get("detail"));
 			}
-			
+
 			return Map.of("type", "image_url", "image_url", imageUrl);
 		}
-		
+
 		// Handle raw image data
 		if (imageContent.getImageData() != null) {
 			try {
 				String base64 = Base64.getEncoder().encodeToString(imageContent.getImageData());
-				
+
 				// Determine MIME type from metadata or default to JPEG
 				String mimeType = "image/jpeg";
 				if (imageContent.getMetadata() != null && imageContent.getMetadata().containsKey("mimeType")) {
 					mimeType = (String) imageContent.getMetadata().get("mimeType");
 				}
-				
+
 				Map<String, Object> imageUrl = new HashMap<>();
-				imageUrl.put("url", "data:" + mimeType + ";base64," + base64);
-				
+				imageUrl.put("url",
+				             "data:"
+				                         + mimeType
+				                         + ";base64,"
+				                         + base64);
+
 				// Add detail level if specified
 				if (imageContent.getMetadata() != null && imageContent.getMetadata().containsKey("detail")) {
 					imageUrl.put("detail", imageContent.getMetadata().get("detail"));
 				}
-				
+
 				return Map.of("type", "image_url", "image_url", imageUrl);
 			} catch (Exception e) {
-				throw new LLMException("Failed to encode image data to base64: " + e.getMessage(), e);
+				throw new LLMException("Failed to encode image data to base64: "
+				            + e.getMessage(), e);
 			}
 		}
-		
+
 		throw new LLMException("ImageContent must contain either URL or image data");
 	}
 
 	/**
-	 * Converts messages with mixed text and image content to OpenAI's multimodal format.
+	 * Converts messages with mixed text and image content to OpenAI's multimodal
+	 * format.
 	 * This method handles cases where a message contains both text and images.
 	 * 
-	 * @param textContent the text part of the message
+	 * @param textContent   the text part of the message
 	 * @param imageContents list of image contents to include
 	 * 
 	 * @return List representing the multimodal content array
 	 * 
 	 * @throws LLMException if content conversion fails
 	 */
-	public List<Map<String, Object>> createMultimodalContent(String textContent, List<ContentWrapper.ImageContent> imageContents) throws LLMException {
+	public List<Map<String, Object>> createMultimodalContent(String textContent,
+	                                                         List<ContentWrapper.ImageContent> imageContents)
+	            throws LLMException {
 		List<Map<String, Object>> contentArray = new ArrayList<>();
-		
+
 		// Add text content if provided
 		if (textContent != null && !textContent.trim().isEmpty()) {
 			contentArray.add(Map.of("type", "text", "text", textContent.trim()));
 		}
-		
+
 		// Add image contents
 		if (imageContents != null) {
 			for (ContentWrapper.ImageContent imageContent : imageContents) {
 				contentArray.add(convertImageToMultimodalContent(imageContent));
 			}
 		}
-		
+
 		return contentArray;
 	}
 
@@ -547,30 +608,33 @@ public class OpenAIJsonMapper {
 	 * Creates a multimodal message map with both text and a single image.
 	 * Convenience method for the common case of text + one image.
 	 * 
-	 * @param role the message role (user, assistant, system)
-	 * @param textContent the text part of the message
+	 * @param role         the message role (user, assistant, system)
+	 * @param textContent  the text part of the message
 	 * @param imageContent the image content
 	 * 
 	 * @return Map representing a complete multimodal message
 	 * 
 	 * @throws LLMException if content conversion fails
 	 */
-	public Map<String, Object> createMultimodalMessage(String role, String textContent, ContentWrapper.ImageContent imageContent) throws LLMException {
+	public Map<String, Object> createMultimodalMessage(String role,
+	                                                   String textContent,
+	                                                   ContentWrapper.ImageContent imageContent)
+	            throws LLMException {
 		Map<String, Object> message = new HashMap<>();
 		message.put("role", role);
-		
+
 		List<Map<String, Object>> contentArray = new ArrayList<>();
-		
+
 		// Add text if provided
 		if (textContent != null && !textContent.trim().isEmpty()) {
 			contentArray.add(Map.of("type", "text", "text", textContent.trim()));
 		}
-		
+
 		// Add image
 		if (imageContent != null) {
 			contentArray.add(convertImageToMultimodalContent(imageContent));
 		}
-		
+
 		message.put("content", contentArray);
 		return message;
 	}
@@ -591,7 +655,7 @@ public class OpenAIJsonMapper {
 
 		if (params != null) {
 			for (Map.Entry<String, Object> entry : params.entrySet()) {
-				String key = entry.getKey();
+				String key   = entry.getKey();
 				Object value = entry.getValue();
 
 				// Map common image generation parameters
@@ -620,20 +684,23 @@ public class OpenAIJsonMapper {
 	 * Converts image editing parameters to OpenAI images API format.
 	 * 
 	 * @param originalImage the original image data
-	 * @param prompt the edit prompt
-	 * @param maskImage optional mask image data
-	 * @param params additional parameters
+	 * @param prompt        the edit prompt
+	 * @param maskImage     optional mask image data
+	 * @param params        additional parameters
 	 * 
 	 * @return request payload Map for /images/edits endpoint
 	 */
-	public Map<String, Object> toImageEditRequest(byte[] originalImage, String prompt, 
-													byte[] maskImage, MapParam params) {
+	public Map<String, Object> toImageEditRequest(byte[] originalImage,
+	                                              String prompt,
+	                                              byte[] maskImage,
+	                                              MapParam params) {
 		Map<String, Object> request = new HashMap<>();
-		
-		// Note: For image editing, the actual image data needs to be sent as multipart/form-data
+
+		// Note: For image editing, the actual image data needs to be sent as
+		// multipart/form-data
 		// This method prepares the non-file parameters
 		request.put("prompt", prompt);
-		
+
 		// Store image data in the request for later multipart processing
 		request.put("_image_data", originalImage);
 		if (maskImage != null) {
@@ -642,7 +709,7 @@ public class OpenAIJsonMapper {
 
 		if (params != null) {
 			for (Map.Entry<String, Object> entry : params.entrySet()) {
-				String key = entry.getKey();
+				String key   = entry.getKey();
 				Object value = entry.getValue();
 
 				switch (key.toLowerCase()) {
@@ -667,19 +734,19 @@ public class OpenAIJsonMapper {
 	 * Converts image variation parameters to OpenAI images API format.
 	 * 
 	 * @param originalImage the original image data
-	 * @param params additional parameters
+	 * @param params        additional parameters
 	 * 
 	 * @return request payload Map for /images/variations endpoint
 	 */
 	public Map<String, Object> toImageVariationRequest(byte[] originalImage, MapParam params) {
 		Map<String, Object> request = new HashMap<>();
-		
+
 		// Store image data for multipart processing
 		request.put("_image_data", originalImage);
 
 		if (params != null) {
 			for (Map.Entry<String, Object> entry : params.entrySet()) {
-				String key = entry.getKey();
+				String key   = entry.getKey();
 				Object value = entry.getValue();
 
 				switch (key.toLowerCase()) {
@@ -706,7 +773,8 @@ public class OpenAIJsonMapper {
 	 * 
 	 * @param response the response Map from OpenAI images API
 	 * 
-	 * @return CompletionResponse containing the generated images as ContentWrapper.ImageContent
+	 * @return CompletionResponse containing the generated images as
+	 *         ContentWrapper.ImageContent
 	 * 
 	 * @throws LLMException if conversion fails
 	 */
@@ -718,32 +786,34 @@ public class OpenAIJsonMapper {
 			// Extract image data
 			List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
 			if (data != null && !data.isEmpty()) {
-				// For now, return the first image. In the future, we might support multiple images
+				// For now, return the first image. In the future, we might support multiple
+				// images
 				Map<String, Object> imageData = data.get(0);
-				
+
 				ContentWrapper.ImageContent imageContent = null;
-				
+
 				// Check if it's a URL response
 				if (imageData.containsKey("url")) {
 					String imageUrl = (String) imageData.get("url");
 					imageContent = new ContentWrapper.ImageContent(imageUrl);
 				}
-				// Check if it's a base64 response  
+				// Check if it's a base64 response
 				else if (imageData.containsKey("b64_json")) {
 					String base64Data = (String) imageData.get("b64_json");
 					try {
 						byte[] imageBytes = Base64.getDecoder().decode(base64Data);
 						imageContent = new ContentWrapper.ImageContent(imageBytes);
-						
+
 						// Add metadata for MIME type
 						Map<String, Object> metadata = new HashMap<>();
 						metadata.put("mimeType", "image/png"); // OpenAI typically returns PNG
 						imageContent.setMetadata(metadata);
 					} catch (IllegalArgumentException e) {
-						throw new LLMException("Failed to decode base64 image data: " + e.getMessage(), e);
+						throw new LLMException("Failed to decode base64 image data: "
+						            + e.getMessage(), e);
 					}
 				}
-				
+
 				if (imageContent != null) {
 					// Add generation metadata if available
 					if (imageData.containsKey("revised_prompt")) {
@@ -754,12 +824,12 @@ public class OpenAIJsonMapper {
 						}
 						metadata.put("revised_prompt", imageData.get("revised_prompt"));
 					}
-					
+
 					completionResponse.setResponse(imageContent);
 				} else {
 					throw new LLMException("No valid image data found in response");
 				}
-				
+
 				// Set completion reason for images
 				completionResponse.setEndReason("image_generated");
 			} else {
@@ -767,7 +837,7 @@ public class OpenAIJsonMapper {
 			}
 
 			// Store full response as metadata
-			Map<String, Object> info = new HashMap<>();
+			MapParam info = new MapParam();
 			info.putAll(response);
 			completionResponse.setInfo(info);
 
@@ -775,7 +845,8 @@ public class OpenAIJsonMapper {
 			if (e instanceof LLMException) {
 				throw e;
 			}
-			throw new LLMException("Failed to parse image generation response: " + e.getMessage(), e);
+			throw new LLMException("Failed to parse image generation response: "
+			            + e.getMessage(), e);
 		}
 
 		return completionResponse;

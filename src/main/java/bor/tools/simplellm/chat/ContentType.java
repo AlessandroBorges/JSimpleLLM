@@ -1,4 +1,4 @@
-package bor.tools.simplellm;
+package bor.tools.simplellm.chat;
 
 /**
  * ContentType represents the type of content being handled.

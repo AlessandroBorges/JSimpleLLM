@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import bor.tools.simplellm.LLMConfig.MODEL_TYPE;
 import lombok.Data;
 
 /**
@@ -44,9 +43,9 @@ public class Model {
 	 * {@code REASONING} types.
 	 * </p>
 	 * 
-	 * @see MODEL_TYPE
+	 * @see Model_Type
 	 */
-	List<MODEL_TYPE> types;
+	List<Model_Type> types;
 
 	/**
 	 * The maximum context length supported by this model.
@@ -70,7 +69,7 @@ public class Model {
 	 * </p>
 	 */
 	public Model() {
-		types = new ArrayList<>(4);
+		types = new ArrayList<>();
 	}
 
 	/**
@@ -84,9 +83,9 @@ public class Model {
 	 * @param contextLength the maximum context length for this model
 	 * @param types         variable arguments of model types this model supports
 	 * 
-	 * @see MODEL_TYPE
+	 * @see Model_Type
 	 */
-	public Model(String name, Integer contextLength, MODEL_TYPE... model_types) {
+	public Model(String name, Integer contextLength, Model_Type... model_types) {
 		this();
 		this.name = name;
 		this.contextLength = contextLength;
@@ -97,7 +96,7 @@ public class Model {
 		}
 	}
 
-	public Model(String name, String alias, Integer contextLength, MODEL_TYPE... model_types) {
+	public Model(String name, String alias, Integer contextLength, Model_Type... model_types) {
 		this();
 		this.name = name;
 		this.alias = alias;
@@ -114,14 +113,14 @@ public class Model {
 	 * 
 	 * @return
 	 */
-	public List<MODEL_TYPE> getTypes() { return this.types; }
+	public List<Model_Type> getTypes() { return this.types; }
 
 	/**
 	 * Add a extra Type to this model
 	 * 
 	 * @param newType
 	 */
-	public void addExtraType(MODEL_TYPE newType) {
+	public void addExtraType(Model_Type newType) {
 		if (types.contains(newType) == false) {
 			types.add(newType);
 		}
@@ -139,7 +138,7 @@ public class Model {
 	 * @return true if the model supports the specified type, false otherwise
 	 */
 	@JsonIgnore
-	public boolean isType(MODEL_TYPE checkType) {
+	public boolean isType(Model_Type checkType) {
 		return types.contains(checkType);
 	}
 
@@ -152,7 +151,7 @@ public class Model {
 	 * @return the name of the model
 	 */
 	@Override
-	public String toString() {
+	public final String toString() {
 		return name;
 	}
 

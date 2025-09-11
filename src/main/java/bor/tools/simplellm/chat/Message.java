@@ -2,10 +2,10 @@ package bor.tools.simplellm.chat;
 
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-import bor.tools.simplellm.ContentType;
-import bor.tools.simplellm.ContentWrapper;
 import bor.tools.simplellm.LLMService;
 import bor.tools.simplellm.MapParam;
 import lombok.Data;
@@ -40,6 +40,7 @@ import lombok.Data;
  * }</pre>
  */
 @Data
+@JsonPropertyOrder({ "role", "content", "reasoning", "usage" })
 public class Message {
 
 	/**
@@ -62,6 +63,9 @@ public class Message {
 	 * (texto, imagem, etc.), permitindo comunicação multimodal.
 	 */
 	private ContentWrapper content;
+
+	@JsonAlias({ "reasoning", "reasoning_content", "thinking", "think" })
+	private String reasoning; // optional name of the user
 
 	/**
 	 * Um mapa de parâmetros personalizados específicos para esta mensagem.
@@ -130,6 +134,7 @@ public class Message {
 		Message clone = new Message(this.idMessage);
 		clone.content = this.content;
 		clone.role = clone.role;
+		clone.reasoning = this.reasoning;
 		clone.usage = this.usage == null ? null : (MapParam) this.usage.clone();
 		clone.mapParam = this.mapParam;
 		return clone;
@@ -148,6 +153,7 @@ public class Message {
 	 * 
 	 * @param text
 	 */
+	@JsonIgnore
 	public void setText(String text) { this.content = new ContentWrapper(ContentType.TEXT, text); }
 
 	/**

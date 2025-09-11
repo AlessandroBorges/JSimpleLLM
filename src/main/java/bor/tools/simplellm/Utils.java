@@ -12,10 +12,15 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 /**
  * Classe com funções de Vetores
  */
-public class VecUtil {
+public class Utils {
 
 	private static final DecimalFormat decimalFormat  = new DecimalFormat("0.0########E0");
 	private static final DecimalFormat decimalFormatD = new DecimalFormat("0.0#####################E0");
@@ -23,7 +28,25 @@ public class VecUtil {
 	/**
 	 * Evitar criação acidental
 	 */
-	private VecUtil() {}
+	private Utils() {}
+
+	private static ObjectMapper jsonMapper = null;
+
+	/**
+	 * Creates and configures an ObjectMapper for beautiful JSON formatting
+	 */
+	public static ObjectMapper createJsonMapper() {
+		if (jsonMapper != null) {
+			return jsonMapper;
+		}
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.registerModule(new JavaTimeModule());
+		mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+		mapper.enable(SerializationFeature.INDENT_OUTPUT);
+		mapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
+		jsonMapper = mapper;
+		return mapper;
+	}
 
 	/**
 	 * Calcula a soma do produto escalar de dois vetores
@@ -132,7 +155,7 @@ public class VecUtil {
 	public static float[] normalize(float[] vector) {
 		float norm = (float) norm(vector);
 
-		if (Math.abs(norm) <= 1.0e-6 || Math.abs(1.0f - norm) <= 1.0e-6) {
+		if (Math.abs(norm) <= 1.0e-8 || Math.abs(1.0f - norm) <= 1.0e-8) {
 			return vector;
 		}
 
@@ -231,7 +254,7 @@ public class VecUtil {
 		List<Similaridade> lista = new ArrayList<>();
 		for (int i = 0; i < valores.length; i++) {
 			float[] b     = embeddings.get(i);
-			double  simil = VecUtil.dotProduct(embedding_valor, b);// VecUtil.dotProduct(a, b);
+			double  simil = Utils.dotProduct(embedding_valor, b);// VecUtil.dotProduct(a, b);
 			lista.add(new Similaridade(valor_referencia, valores[i], simil));
 		}
 
@@ -258,7 +281,7 @@ public class VecUtil {
 				if (i != j && i < j) {
 					float[] a     = embeddings.get(i);
 					float[] b     = embeddings.get(j);
-					double  simil = VecUtil.dotProduct(a, b);// VecUtil.dotProduct(a, b);
+					double  simil = Utils.dotProduct(a, b);// VecUtil.dotProduct(a, b);
 					lista.add(new Similaridade(valores[i], copy[j], simil));
 				}
 			}

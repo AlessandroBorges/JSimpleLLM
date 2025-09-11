@@ -44,46 +44,6 @@ import lombok.Data;
 public class LLMConfig {
 
 	/**
-	 * Enumeration defining the various types of LLM models supported.
-	 * <p>
-	 * Each model type represents a specific capability or use case:
-	 * </p>
-	 * <ul>
-	 * <li>{@code EMBEDDING} - Models for generating text embeddings</li>
-	 * <li>{@code EMBEDDING_DIMENSION} - Models that provide dimensioning
-	 * (Matrioshka)
-	 * for embeddings</li>
-	 * <li>{@code LANGUAGE} - General language understanding and generation
-	 * models</li>
-	 * <li>{@code FAST} - Models optimized for speed and quick responses</li>
-	 * <li>{@code REASONING} - Models specialized in logical reasoning and
-	 * problem-solving</li>
-	 * <li>{@code CODING} - Models designed for code generation and programming
-	 * tasks</li>
-	 * <li>{@code TEXT} - Text processing and manipulation models</li>
-	 * <li>{@code VISION} - Vision and image understanding models</li>
-	 * <li>{@code IMAGE} - Image generation and manipulation models</li>
-	 * <li>{@code AUDIO} - Audio processing and generation models</li>
-	 * </ul>
-	 */
-	public enum MODEL_TYPE {
-			EMBEDDING,
-			EMBEDDING_DIMENSION,
-			LANGUAGE,
-			FAST,
-			REASONING,
-			CODING,
-			TEXT,
-			VISION,
-			IMAGE,
-			AUDIO,
-			RESPONSES_API,
-			BATCH,
-			TOOLS,
-			GPT5_CLASS
-	}
-
-	/**
 	 * The base URL for the LLM API endpoint.
 	 * <p>
 	 * This should be the root URL where the LLM service is hosted,
@@ -141,5 +101,19 @@ public class LLMConfig {
 	 */
 	@Builder.Default
 	private MapModels modelMap = new MapModels(); // class model
+
+	/**
+	 * Retrieves a model by its name or alias.
+	 * <p>
+	 * This method searches the {@link #modelMap} for a model matching the given
+	 * name or alias.
+	 * </p>
+	 * 
+	 * @param string the model name or alias
+	 * 
+	 * @return the corresponding {@link Model} if found, otherwise null
+	 */	public Model getModel(String string) {
+		return modelMap.getModel(string);
+	}
 }
 // LLMConfig

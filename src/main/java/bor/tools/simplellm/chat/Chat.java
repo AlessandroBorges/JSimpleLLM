@@ -4,9 +4,12 @@ import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.UUID;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import bor.tools.simplellm.ContextManager;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.ToolsConfig;
+import bor.tools.simplellm.Utils;
 import lombok.Data;
 
 /**
@@ -92,6 +95,10 @@ public class Chat {
 	 */
 	private ToolsConfig toolsConfig;
 
+	/**
+	 * O mapeador JSON utilizado para serialização e desserialização.
+	 * Inicializado com uma instância padrão do Jackson ObjectMapper.
+	 */
 	public Chat() {
 		this.createdAt = LocalDateTime.now();
 		this.lastAccess = this.createdAt;
@@ -108,15 +115,34 @@ public class Chat {
 		this.contextManage = contextManage;
 	}
 
+	/**
+	 * Atualiza o timestamp do último acesso para o momento atual.
+	 * Deve ser chamado sempre que houver uma interação com a sessão de chat.
+	 */
 	public void updateLastAccess() {
 		this.lastAccess = LocalDateTime.now();
 	}
 
-	public void addMessage(Message msg) {
+	/**
+	 * Adiciona uma nova mensagem à lista de mensagens do chat.
+	 * Atualiza o timestamp do último acesso.
+	 * 
+	 * @param msg a mensagem a ser adicionada
+	 */
+
+	public Message addMessage(Message msg) {
 		this.messages.add(msg);
 		updateLastAccess();
+		return msg;
 	}
 
+	/**
+	 * Procura uma mensagem na lista pelo seu ID.
+	 * 
+	 * @param id o UUID da mensagem a ser encontrada
+	 * 
+	 * @return a mensagem se encontrada, ou null se não existir
+	 */
 	public Message findMessage(UUID id) {
 		for (Message m : this.messages) {
 			if (id.equals(m.getIdMessage())) {
@@ -126,11 +152,26 @@ public class Chat {
 		return null;
 	}
 
+	/**
+	 * Retorna a mensagem na posição especificada da lista.
+	 * Atualiza o timestamp do último acesso.
+	 * 
+	 * @param index o índice da mensagem a ser retornada
+	 * 
+	 * @return a mensagem na posição especificada
+	 * 
+	 * @throws IndexOutOfBoundsException se o índice estiver fora do intervalo
+	 *                                   (index < 0 || index >= size())
+	 */
 	public Message getMessage(int index) {
 		updateLastAccess();
 		return this.messages.get(index);
 	}
 
+	/**
+	 * Remove todas as mensagens da lista.
+	 * Atualiza o timestamp do último acesso.
+	 */
 	public void clearMessages() {
 		updateLastAccess();
 		if (this.messages != null) {
@@ -182,24 +223,46 @@ public class Chat {
 		return messageCount();
 	}
 
-	public void addSystemMessage(String system) {
+	public Message addSystemMessage(String system) {
 		Message m = new Message(MessageRole.SYSTEM, system);
-		addMessage(m);
+		return addMessage(m);
 	}
 
-	public void addAssistantMessage(String assistant) {
+	public Message addAssistantMessage(String assistant) {
 		Message m = new Message(MessageRole.ASSISTANT, assistant);
-		addMessage(m);
+		return addMessage(m);
 	}
 
-	public void addDeveloperMessage(String developer) {
+	public Message addDeveloperMessage(String developer) {
 		Message m = new Message(MessageRole.DEVELOPER, developer);
-		addMessage(m);
+		return addMessage(m);
 	}
 
-	public void addUserMessage(String user) {
+	public Message addUserMessage(String user) {
 		Message m = new Message(MessageRole.USER, user);
-		addMessage(m);
+		return addMessage(m);
+	}
+
+	public Message addUserMessage(String user, MapParam usage) {
+		Message m = new Message(MessageRole.USER, user);
+		m.setUsage(usage);
+		return addMessage(m);
+	}
+
+	@Override
+	public String toString() {
+		try {
+			return Utils.createJsonMapper().writeValueAsString(this);
+		} catch (JsonProcessingException e) {
+			// Fallback to simple string representation if JSON processing fails
+			return "Chat{id="
+			            + id
+			            + ", model="
+			            + model
+			            + ", messageCount="
+			            + messageCount()
+			            + "}";
+		}
 	}
 
 }

@@ -7,11 +7,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
 
 import bor.tools.simplellm.CompletionResponse;
-import bor.tools.simplellm.ContentType;
-import bor.tools.simplellm.ContentWrapper;
 import bor.tools.simplellm.LLMConfig;
+import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.chat.Chat;
+import bor.tools.simplellm.chat.ContentType;
+import bor.tools.simplellm.chat.ContentWrapper;
 import bor.tools.simplellm.chat.Message;
 import bor.tools.simplellm.chat.MessageRole;
 import bor.tools.simplellm.exceptions.LLMException;
@@ -163,11 +164,11 @@ class OpenAIVisionAndImageTest extends OpenAILLMServiceTestBase {
         OpenAILLMService service = new OpenAILLMService(config);
         
         // When & Then
-        assertTrue(service.isModelType("gpt-4-vision-preview", LLMConfig.MODEL_TYPE.VISION),
+        assertTrue(service.isModelType("gpt-4-vision-preview", Model_Type.VISION),
                   "Should detect GPT-4 Vision as vision model");
-        assertTrue(service.isModelType("gpt-4o", LLMConfig.MODEL_TYPE.VISION),
+        assertTrue(service.isModelType("gpt-4o", Model_Type.VISION),
                   "Should detect GPT-4o as vision model");
-        assertFalse(service.isModelType("gpt-3.5-turbo", LLMConfig.MODEL_TYPE.VISION),
+        assertFalse(service.isModelType("gpt-3.5-turbo", Model_Type.VISION),
                    "Should not detect GPT-3.5 as vision model");
         
         System.out.println("Vision model detection works correctly");
@@ -283,13 +284,13 @@ class OpenAIVisionAndImageTest extends OpenAILLMServiceTestBase {
         OpenAILLMService service = new OpenAILLMService(config);
         
         // When & Then - Check DALL-E models are configured
-        assertTrue(service.isModelType("dall-e-3", LLMConfig.MODEL_TYPE.IMAGE),
+        assertTrue(service.isModelType("dall-e-3", Model_Type.IMAGE),
                   "Should detect DALL-E 3 as image generation model");
-        assertTrue(service.isModelType("dall-e-2", LLMConfig.MODEL_TYPE.IMAGE),
+        assertTrue(service.isModelType("dall-e-2", Model_Type.IMAGE),
                   "Should detect DALL-E 2 as image generation model");
         
         // Check model finding
-        bor.tools.simplellm.Model imageModel = service.findModel(LLMConfig.MODEL_TYPE.IMAGE);
+        bor.tools.simplellm.Model imageModel = service.findModel(Model_Type.IMAGE);
         assertNotNull(imageModel, "Should find an image generation model");
         assertTrue(imageModel.getName().contains("dall-e"), "Should be a DALL-E model");
         

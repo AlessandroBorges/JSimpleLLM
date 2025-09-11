@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 import bor.tools.simplellm.chat.Chat;
+import bor.tools.simplellm.chat.ContentType;
 import bor.tools.simplellm.chat.Message;
 import bor.tools.simplellm.chat.MessageRole;
 import bor.tools.simplellm.exceptions.LLMException;

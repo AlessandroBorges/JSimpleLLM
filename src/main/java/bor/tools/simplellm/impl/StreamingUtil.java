@@ -8,9 +8,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import bor.tools.simplellm.CompletionResponse;
-import bor.tools.simplellm.ContentType;
-import bor.tools.simplellm.ContentWrapper;
 import bor.tools.simplellm.ResponseStream;
+import bor.tools.simplellm.chat.ContentType;
+import bor.tools.simplellm.chat.ContentWrapper;
 import bor.tools.simplellm.exceptions.LLMException;
 import okhttp3.Response;
 import okhttp3.ResponseBody;

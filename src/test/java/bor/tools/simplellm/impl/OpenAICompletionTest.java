@@ -10,8 +10,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import bor.tools.simplellm.CompletionResponse;
-import bor.tools.simplellm.ContentType;
 import bor.tools.simplellm.MapParam;
+import bor.tools.simplellm.chat.ContentType;
 import bor.tools.simplellm.exceptions.LLMException;
 
 /**
