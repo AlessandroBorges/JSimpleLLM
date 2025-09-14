@@ -91,7 +91,7 @@ public class ContentWrapper {
      */
 	@JsonIgnore
 	public String getText() {
-		if (type == ContentType.TEXT && content instanceof String) {
+		if (type == ContentType.TEXT && content instanceof String) {			
 			return (String) content;
 		}
 		return null;

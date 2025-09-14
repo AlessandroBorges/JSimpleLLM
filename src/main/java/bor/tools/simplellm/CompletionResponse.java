@@ -1,5 +1,7 @@
 package bor.tools.simplellm;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -28,8 +30,17 @@ import lombok.Data;
  * @since 1.0
  */
 @Data
-@JsonPropertyOrder({ "chatId", "model", "response", "reasoning", "endReason", "usage", "info" })
+@JsonPropertyOrder({ "chatId", "model", "reasoning_effort", "reasoning_content", "response",  "endReason", "usage", "info" })
+
 public class CompletionResponse {
+
+	private static final String REASONING_END = "</reasoning>";
+
+	private static final String REASONING = "<reasoning>";
+
+	private static final String THINK = "<think>";
+
+	private static final String THINK_END = "</think>";
 
 	/**
 	 * End reason constant indicating natural completion of the response.
@@ -73,7 +84,7 @@ public class CompletionResponse {
 	 * 
 	 * @see ContentWrapper
 	 */
-	public ContentWrapper response;
+	protected ContentWrapper response;
 
 	/**
 	 * Optional reasoning or thinking process behind the response.
@@ -83,8 +94,13 @@ public class CompletionResponse {
 	 * and may be {@code null} for many responses.
 	 * </p>
 	 */
-	@JsonAlias({ "reasoning", "reasoning_content", "thinking", "think" })
-	public String reasoning; // optional reasoning or thinking process
+	@JsonAlias({ "reasoning_content"})
+	protected String reasoningContent; // optional reasoning or thinking process
+	
+	/**
+	 * Optional reasoning effort level used during response generation.
+	 */
+	protected Reasoning_Effort reasoningEffort; // optional reasoning effort level
 
 	/**
 	 * The reason why the response generation was terminated.
@@ -99,7 +115,7 @@ public class CompletionResponse {
 	 * </ul>
 	 * </p>
 	 */
-	public String endReason;
+	protected String endReason;
 
 	/**
 	 * Additional metadata and information from the API response.
@@ -119,7 +135,7 @@ public class CompletionResponse {
 	 * and request parameters used.
 	 * </p>
 	 */
-	private MapParam info;
+	protected MapParam info;
 
 	/**
 	 * Completion usage statistics.
@@ -128,7 +144,7 @@ public class CompletionResponse {
 	 * <li>"completion_tokens",
 	 * <li>"total_tokens"
 	 */
-	private MapParam usage; // for any custom data
+	protected MapParam usage; // for any custom data
 
 	/**
 	 * Retrieves the model name used for generating the response.
@@ -159,10 +175,117 @@ public class CompletionResponse {
 	 */
 	@JsonIgnore
 	public String getText() {
-		if (this.response != null && this.response.getType() == ContentType.TEXT) {
+		if (this.response != null && this.response.getType() == ContentType.TEXT) {			
 			return response.getText();
 		}
 		return null;
+	}
+	
+	/**
+	 * Sets the text content of the response.
+	 * If content is already of type TEXT, it updates the content. <br>
+	 * 
+	 * It also extracts any reasoning content enclosed within &lt;reasoning&gt;...&lt;/reasoning&gt;
+	 * or &lt;think&gt;...&lt;/think&gt; tags and stores it in the reasoningContent field.
+	 * <p>
+	 * This method updates the response field with a new ContentWrapper of type
+	 * TEXT containing the provided text. If the response is already of type TEXT,
+	 * it simply updates its content.
+	 * </p>
+	 * 
+	 * @param text the text content to set in the response
+	 */
+	@JsonIgnore
+	public void setText(String text) {
+		var reasoning = this.extractReasoning(text);
+		if (reasoning != null && !reasoning.isEmpty()) {
+			this.reasoningContent = reasoning;
+			text = text.replaceAll(reasoning, "").trim();
+		}
+		if (this.response != null && this.response.getType() == ContentType.TEXT) {	
+			this.response.setContent(text);
+		} else {
+			this.response = new ContentWrapper(ContentType.TEXT, text);
+		}		
+	}
+	
+	/**
+	 * Retrieves the reasoning content from the response if available.
+	 * <p>
+	 * This method first checks if the {@code reasoningContent} field is
+	 * already populated. If not, it attempts to extract the reasoning content
+	 * from the {@code info} map, looking for a key named "reasoning_content".
+	 * If the key is found, its value is assigned to {@code reasoningContent}
+	 * and returned. If the key is not present or the {@code info} map is null,
+	 * it returns {@code null}.
+	 * </p>
+	 * 
+	 * @return the reasoning content as a string, or null if not available
+	 */
+	public String getReasoningContent() {
+		if (reasoningContent != null)
+			return reasoningContent;
+		else {
+			// check if info has reasoning_content
+			if (this.info != null) {
+				if (this.info.containsKey("reasoning_content")) {
+					this.reasoningContent = this.info.get("reasoning_content").toString();
+				}
+			}
+			if (this.info.containsKey("choices")) {
+				if (this.info.get("choices") instanceof List<?> == false) {
+					List<?> choices = (List<?>) this.info.get("choices");
+					if (choices.size() > 0) {
+						Object choice0 = choices.get(0);
+						if (choice0 instanceof MapParam) {
+							MapParam choiceMap = (MapParam) choice0;
+							if (choiceMap.containsKey("reasoning_content")) {
+								this.reasoningContent = choiceMap.get("reasoning_content").toString();
+							}
+						}
+					}
+				}
+			}			
+			// check if text response has reasoning content inside <reasoning>...</reasoning> or <think>...</think>
+			String text = getText();
+			reasoningContent = extractReasoning(text);				
+		}
+		return reasoningContent;
+	}
+	
+	/**
+	 * Extracts reasoning content from the provided text.
+	 * <p>
+	 * This method searches for reasoning content enclosed within
+	 * &lt;reasoning&gt;...&lt;/reasoning&gt; or &lt;think&gt;...&lt;/think&gt;
+	 * tags in the given text. If such content is found and the
+	 * {@code reasoningContent} field is not already populated, it extracts the
+	 * reasoning content, assigns it to {@code reasoningContent}.
+	 * </p>
+	 * 
+	 * @param text the text to extract reasoning content from
+	 */
+	protected String extractReasoning(String text) {
+		String reasoning = null;
+		 // only if not already set
+		if (text != null && this.reasoningContent == null) {
+			int start = text.indexOf(REASONING);
+			int end = text.indexOf(REASONING_END);
+			if (start >= 0 && end > start) {
+				reasoning = text.substring(start, end + REASONING_END.length()).trim();
+				//text = text.replaceAll("(?s)<reasoning>.*?</reasoning>", "").trim();
+				//setText(text);
+			} else {
+				start = text.indexOf(THINK);
+				end = text.indexOf(THINK_END);
+				if (start >= 0 && end > start) {
+					reasoning = text.substring(start, end + THINK_END.length()).trim();
+					//text = text.replaceAll("(?s)<think>.*?</think>", "").trim();
+					//this.setText(text);
+				}
+			}				
+		}	
+		return reasoning;
 	}
 
 	/**
@@ -171,7 +294,9 @@ public class CompletionResponse {
 	 * @return
 	 */
 	@JsonIgnore
-	public Object getContent() { return this.response != null ? this.response.getContent() : null; }
+	public Object getContent() { 
+		return this.response != null ? this.response.getContent() : null; 
+	}
 
 	/**
 	 * Returns a JSON string representation of the CompletionResponse object.
@@ -182,15 +307,17 @@ public class CompletionResponse {
 		try {
 			return mapper.writeValueAsString(this);
 		} catch (Exception e) {
-
+			e.printStackTrace();
 		}
 		return "CompletionResponse{chatId="
 		            + chatId
-		            + ", response="
-		            + response
-		            + ", endReason="
+		            + ",\n response="		           
+		            + getReasoningContent()
+		            + getResponse()
+		            + ",\n reasoningContent="
+		            + ",\n endReason="		            
 		            + endReason
-		            + ", info="
+		            + ",\n info="
 		            + info
 		            + "}";
 	}

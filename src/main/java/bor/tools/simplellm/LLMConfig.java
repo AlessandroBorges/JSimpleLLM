@@ -115,5 +115,41 @@ public class LLMConfig {
 	 */	public Model getModel(String string) {
 		return modelMap.getModel(string);
 	}
+	 
+	 /**
+	  * Add multiple models to the model map.
+	  * @param models
+	  * @return MapModels instance for method chaining
+	  */
+	public MapModels addModels(Model... models) {
+		if (models != null) {
+			for (var m : models) {
+				this.modelMap.put(m.getName(), m);
+			}
+		}
+		return this.modelMap;
+	} 
+	
+	/**
+	 * Add models  
+	 * @param models - Iterable of Model instances or a Map containing Model instances as values
+	 * @return MapModels instance for method chaining
+	 */
+	public MapModels addModels(Iterable<Model> models) {		 
+		    if(models instanceof Map) {
+		        for (var m : ((Map<?, ?>) models).values()) {
+		            if (m instanceof Model) {
+		                this.modelMap.put(((Model) m).getName(), (Model) m);
+		            }
+		        }
+		        return this.modelMap;
+		    } else 
+			if (models != null) {
+				for (var m : models) {
+					this.modelMap.put(m.getName(), m);
+				}
+			}
+			return this.modelMap;
+		}
 }
 // LLMConfig

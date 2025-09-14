@@ -61,8 +61,7 @@ public interface LLMService {
 	 */
 	default float[] embeddings(String texto, Model model) throws LLMException {
 		MapParam params = new MapParam();
-		params.put("model", model);
-		
+		params.put("model", model);		
 		if (model != null && model.getTypes().contains(Model_Type.EMBEDDING)) {
 			return embeddings(Emb_Operation.DEFAULT, texto, params);
 		} else {
@@ -418,7 +417,7 @@ public interface LLMService {
 	 * @see LLMConfig
 	 */
 	default boolean isModelType(Model model, Model_Type type) {
-		if (model != null) {
+		if (model != null && type != null) {
 			return model.getTypes().contains(type);
 		}
 		return false;
@@ -441,11 +440,8 @@ public interface LLMService {
 	 */
 	default boolean isModelType(String modelName, Model_Type type) {
 		LLMConfig config = getLLMConfig();
-		Model     model  = config.getModelMap().get(modelName);
-		if (model != null) {
-			return model.getTypes().contains(type);
-		}
-		return false;
+		Model     model  = config.getModel(modelName);
+		return isModelType(model, type);
 	}
 	
 

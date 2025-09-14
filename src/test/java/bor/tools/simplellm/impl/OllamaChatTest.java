@@ -23,15 +23,15 @@ class OllamaChatTest extends OllamaLLMServiceTestBase {
         // Given
         Chat chat = new Chat();
         chat.addSystemMessage("You are a helpful math tutor.");
-        chat.addUserMessage("What is 8 divided by 2?");
+        //chat.addUserMessage("What is 8 divided by 2?");
         
         MapParam params = new MapParam();
         params.put("model", getFirstAvailableModel());
-        params.put("max_tokens", 50);
+        params.put("max_tokens", 1024);
         params.put("temperature", 0.1);
         
         // When
-        CompletionResponse response = llmService.chatCompletion(chat, "Please explain your answer.", params);
+        CompletionResponse response = llmService.chatCompletion(chat, "/no-think \nWhat is 8 divided by 2?", params);
         
         // Then
         assertNotNull(response, "Response should not be null");
@@ -39,6 +39,9 @@ class OllamaChatTest extends OllamaLLMServiceTestBase {
         assertEquals(ContentType.TEXT, response.getResponse().getType(), "Response should be text type");
         
         String responseText = response.getResponse().getText();
+        System.out.println("Reasoning Text:\n" + response.getReasoningContent() + "\n **********************\n");
+        System.out.println("Response Text:\n" + responseText);
+        
         assertNotNull(responseText, "Response text should not be null");
         assertFalse(responseText.trim().isEmpty(), "Response text should not be empty");
         
@@ -46,7 +49,7 @@ class OllamaChatTest extends OllamaLLMServiceTestBase {
         assertTrue(responseText.contains("4"), "Response should contain the answer '4'");
         
         // Check that the chat was updated with messages
-        assertEquals(4, chat.messageCount(), "Chat should have 4 messages: system, user, new user, assistant");
+        assertEquals(3, chat.messageCount(), "Chat should have 4 messages: system, user, new user, assistant");
         assertEquals(MessageRole.ASSISTANT, chat.getLastMessage().getRole(), "Last message should be from assistant");
         
         System.out.println("Ollama Chat Response: " + responseText);
@@ -88,30 +91,33 @@ class OllamaChatTest extends OllamaLLMServiceTestBase {
         // Given
         Chat chat = new Chat();
         chat.setModel(getFirstAvailableModel());
-        chat.addSystemMessage("You are a helpful assistant. Keep responses brief.");
+        chat.addSystemMessage("Você é um professor de geografia. Seja breve e direto.");
         
         MapParam params = new MapParam();
-        params.put("max_tokens", 50);
-        params.put("temperature", 0.2);
+        params.put("max_tokens", 500);
+        params.put("temperature", 0.2f);
         
         // Turn 1
-        CompletionResponse response1 = llmService.chatCompletion(chat, "What's the capital of Brazil?", params);
+        CompletionResponse response1 = llmService.chatCompletion(chat, "/no-think \nQual é a capital do Brasil?", params);
+        
+        System.out.println("Ollama Turn 1 Response: " + response1.getResponse().getText());
         assertNotNull(response1);
         assertTrue(response1.getResponse().getText().toLowerCase().contains("brasília") || 
                   response1.getResponse().getText().toLowerCase().contains("brasilia"));
         
         // Turn 2 - follow up question
-        CompletionResponse response2 = llmService.chatCompletion(chat, "What about Argentina?", params);
+        CompletionResponse response2 = llmService.chatCompletion(chat, "E da Argentina?", params);
+        System.out.println("Ollama Turn 1 Response: " + response2.getResponse().getText());
         assertNotNull(response2);
         assertTrue(response2.getResponse().getText().toLowerCase().contains("buenos aires"));
         
         // Check conversation state
-        assertEquals(6, chat.messageCount(), "Should have 6 messages total");
+        assertEquals(5, chat.messageCount(), "Should have 5 messages total");
         
         System.out.println("Ollama Conversation:");
         for (int i = 0; i < chat.messageCount(); i++) {
             var msg = chat.getMessage(i);
-            System.out.println(msg.getRole() + ": " + msg.getText());
+            System.out.println("#" + i +"\t" + msg.getRole() + ": " + msg.getText());
         }
     }
 

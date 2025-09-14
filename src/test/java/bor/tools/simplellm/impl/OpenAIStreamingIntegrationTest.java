@@ -198,6 +198,7 @@ class OpenAIStreamingIntegrationTest extends OpenAILLMServiceTestBase {
      */
     private static class StreamingMonitor implements ResponseStream {
         private final List<String> tokens = new ArrayList<>();
+        private final List<String> tokensReason = new ArrayList<>();
         private final AtomicInteger tokenCount = new AtomicInteger(0);
         private final AtomicBoolean completed = new AtomicBoolean(false);
         private final AtomicBoolean hasError = new AtomicBoolean(false);
@@ -207,8 +208,12 @@ class OpenAIStreamingIntegrationTest extends OpenAILLMServiceTestBase {
         private final long startTime = System.currentTimeMillis();
         
         @Override
-        public synchronized void onToken(String token) {
-            tokens.add(token);
+        public synchronized void onToken(String token, ContentType type) {
+        	switch (type) {
+        		case TEXT -> tokens.add(token);
+				case REASONING -> tokensReason.add(token);
+				default -> tokens.add(token); // For simplicity, treat others as text
+        	}         
             tokenCount.incrementAndGet();
             tokenTimestamps.add(System.currentTimeMillis() - startTime);
         }

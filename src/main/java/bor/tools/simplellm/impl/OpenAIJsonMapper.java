@@ -3,15 +3,19 @@ package bor.tools.simplellm.impl;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.knuddels.jtokkit.api.ModelType;
 
 import bor.tools.simplellm.CompletionResponse;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model;
+import bor.tools.simplellm.Model_Type;
+import bor.tools.simplellm.Reasoning_Effort;
 import bor.tools.simplellm.Utils;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.chat.ContentType;
@@ -62,14 +66,15 @@ public class OpenAIJsonMapper {
 	public Map<String, Object> toChatCompletionRequest(Chat chat, String query, MapParam params) throws LLMException {
 		Map<String, Object> request = new HashMap<>();
 
-		Object model = params.getModel();
+		Object modelObj = params.getModel();
 		// Set model
-		model = model != null ? model : chat.getModel();
-		if (model == null) {
+		modelObj = modelObj != null ? modelObj : chat.getModel();
+		if (modelObj == null) {
 			throw new IllegalArgumentException("Model must be specified for chat completion request");
 		}
-		request.put("model", model.toString());
-
+		request.put("model", modelObj);
+	
+		
 		// Convert messages
 		List<Map<String, Object>> messages = new ArrayList<>();
 
@@ -94,7 +99,9 @@ public class OpenAIJsonMapper {
 			for (Map.Entry<String, Object> entry : params.entrySet()) {
 				String key   = entry.getKey();
 				Object value = entry.getValue();
-
+                 if (value==null) 
+                	 continue;
+                 
 				// Map common parameter names
 				switch (key.toLowerCase()) {
 					case "temperature":
@@ -103,7 +110,7 @@ public class OpenAIJsonMapper {
 					case "frequency_penalty":
 					case "presence_penalty":
 					case "stop":
-					case "stream":
+					case "stream":						
 						request.put(key, value);
 						break;
 					default:
@@ -113,10 +120,36 @@ public class OpenAIJsonMapper {
 				}
 			}
 		}
-
+		// Order properties for readability
+		request = orderProperty(request, "model", "reasoning_effort", "messages", "temperature", "max_tokens", "top_p",
+		            "frequency_penalty", "presence_penalty", "stop", "stream");
 		return request;
 	}
+	
+	/**
+	 * Orders the properties of a Map according to the specified key order.
+	 * Keys not in the order list are appended at the end in their original order.
+	 * 
+	 * @param source    the original Map
+	 * @param keysOrder the desired key order
+	 * 
+	 * @return a new LinkedHashMap with properties ordered
+	 */
+	protected LinkedHashMap<String, Object> orderProperty(Map<String, Object> source, String... keysOrder) {
+	    LinkedHashMap<String, Object> copy = new LinkedHashMap<>();
+	    for (String key : keysOrder) {
+	        if (source.containsKey(key)) {
+	            copy.put(key, source.remove(key));
+	        }
+	    }
+	    // copy remaining entries in original order
+	    for (Map.Entry<String, Object> entry : source.entrySet()) {
+	        copy.put(entry.getKey(), entry.getValue());
+	    }
+	    return copy;
+	}
 
+	
 	/**
 	 * Converts a Completion (non-chat) object and parameters into an OpenAI
 	 * completion request payload.<br>
@@ -220,7 +253,7 @@ public class OpenAIJsonMapper {
 							break;
 						}
 					}
-					completionResponse.setReasoning(reasoning);
+					completionResponse.setReasoningContent(reasoning);
 					/////////
 				} else {
 					// Fallback to text field for non-chat completions
@@ -273,6 +306,13 @@ public class OpenAIJsonMapper {
 					if (content != null) {
 						response.setResponse(new ContentWrapper(ContentType.TEXT, content));
 					}
+					if(delta.get("reasoning") != null || delta.get("reasoning_content") != null) {
+					  String reasoning = (String) delta.get("reasoning");	
+					  if(reasoning==null) {
+						  reasoning = (String) delta.get("reasoning_content");
+					  }
+					  response.setReasoningContent(reasoning);
+					}					
 				}
 
 				String finishReason = (String) firstChoice.get("finish_reason");
@@ -322,6 +362,59 @@ public class OpenAIJsonMapper {
 		return request;
 	}
 
+	public Map<String, Model> fromModelsRequest(Map<String, Object> response) throws LLMException {
+		Map<String, Model> models = new HashMap<>();
+		try {
+			
+			Object dataObj = response.get("data");
+			if (dataObj == null || !(dataObj instanceof List)) {
+				throw new LLMException("No model data found in response", null);
+			}
+			@SuppressWarnings("unchecked")
+			List<Map<String, Object>> data = (List<Map<String, Object>>) dataObj;
+			if (data != null && !data.isEmpty()) {
+				for (Map<String, Object> modelData : data) {
+					String   id            = (String) modelData.get("id");
+					if(id==null || id.isEmpty()) {
+					  id = (String) modelData.get("name");
+					}
+					if (id == null || id.isEmpty()) {
+						continue;
+					}
+					Integer  contextLength = null;
+					if (modelData.containsKey("context_length")) {
+						contextLength = (Integer) modelData.get("context_length");
+					} else if (modelData.containsKey("max_context_length")) {
+						contextLength = (Integer) modelData.get("max_context_length");
+					}					
+					List<Model_Type> types = new ArrayList<>();					
+					String idLower = id.toLowerCase();
+					types.add(id.contains("embed") ? Model_Type.EMBEDDING :Model_Type.LANGUAGE);					
+					if (id.toLowerCase().contains("code") || id.toLowerCase().contains("wizard")) {
+						types.add(Model_Type.CODING);
+					} else if (id.toLowerCase().contains("vision") || id.toLowerCase().contains("image")
+					        || id.toLowerCase().contains("dalle")) {
+						types.add( Model_Type.VISION);
+					} else if (id.toLowerCase().contains("fast") || id.toLowerCase().contains("mini")
+								|| idLower.contains("nano") ) {
+						types.add(Model_Type.FAST);
+					} else if (id.toLowerCase().contains("reason") || id.toLowerCase().contains("gpt-4o-r")
+					        || id.toLowerCase().contains("gemini-1.5")) {
+						types.add(Model_Type.REASONING);
+					}
+					
+					Model model = new Model(id, contextLength, types.toArray(new Model_Type[1]));
+					models.put(id, model);
+				}
+			}
+		} catch (Exception e) {
+			throw new LLMException("Failed to parse models response: "
+			            + e.getMessage(), e);
+		}
+		return models;
+		
+	}
+	
 	/**
 	 * Converts an OpenAI embeddings response to a float array.
 	 * 
@@ -862,7 +955,25 @@ public class OpenAIJsonMapper {
 	 * @throws LLMException if conversion fails
 	 */
 	public String toJson(Map<String, Object> data) throws LLMException {
-		try {
+		// some object MUST be converted to string, using toString()
+		// before serializing to JSON
+	    Class<?>[] toStringJson = { 
+	                             Model.class,
+	                             Reasoning_Effort.class,
+	                             Enum.class		            
+		}; 
+		for(Map.Entry<String, Object> entry : data.entrySet()) {
+			if(entry.getValue() != null) {
+				for(Class<?> cls : toStringJson) {
+					if(cls.isAssignableFrom(entry.getValue().getClass())) {
+						entry.setValue(entry.getValue().toString());
+						break;
+					}
+				}
+			}			
+		}
+		
+		try {				
 			return objectMapper.writeValueAsString(data);
 		} catch (JsonProcessingException e) {
 			throw new LLMException("Failed to convert to JSON: "

@@ -42,58 +42,49 @@ public class StreamingUtil {
 	}
 
 	/**
-	 * Processes an SSE streaming response in the background.
-	 * 
+	 * Processes an SSE streaming response in real-time.
+	 * This method reads the stream line by line as data arrives from the network.
+	 *
 	 * @param response       the HTTP response containing SSE stream
 	 * @param responseStream callback interface for handling tokens
-	 * 
+	 *
 	 * @return Future containing the complete accumulated response
 	 */
 	public Future<CompletionResponse> processStreamingResponse(Response response, ResponseStream responseStream) {
 		return executorService.submit(() -> {
 			StringBuilder      fullContent   = new StringBuilder();
+			StringBuilder      fullReasoning = new StringBuilder();
 			CompletionResponse finalResponse = new CompletionResponse();
+			StringBuilder      lineBuffer    = new StringBuilder();
 
 			try (ResponseBody body = response.body()) {
 				if (body == null) {
 					throw new LLMException("Empty response body for streaming request");
 				}
 
-				String         responseString = body.string();
-				BufferedReader reader         = new BufferedReader(new StringReader(responseString));
-				String         line;
+				// Use character stream for real-time line-by-line reading
+				try (BufferedReader reader = new BufferedReader(body.charStream())) {
+					String line;
 
-				while ((line = reader.readLine()) != null) {
-					if (line.startsWith("data: ")) {
-						String sseData = line.substring(6); // Remove "data: " prefix
+					// Read each line as it arrives from the network
+					while ((line = reader.readLine()) != null) {
+						if (line.startsWith("data: ")) {
+							String sseData = line.substring(6).trim(); // Remove "data: " prefix
 
-						if ("[DONE]".equals(sseData.trim())) {
-							// Stream completed
-							break;
-						}
-
-						try {
-							CompletionResponse chunk = jsonMapper.fromStreamingChunk(sseData);
-							if (chunk != null && chunk.getResponse() != null) {
-								String content = chunk.getResponse().getText();
-								if (content != null) {
-									fullContent.append(content);
-									responseStream.onToken(content);
-								}
-
-								// Update final response metadata from last chunk
-								if (chunk.getEndReason() != null) {
-									finalResponse.setEndReason(chunk.getEndReason());
-								}
-								if (chunk.getInfo() != null) {
-									finalResponse.setInfo(chunk.getInfo());
-								}
+							if ("[DONE]".equals(sseData)) {
+								// Stream completed
+								break;
 							}
-						} catch (LLMException e) {
-							// Log parsing error but continue processing
-							System.err.println("Failed to parse streaming chunk: "
-							            + e.getMessage());
+
+							if (!sseData.isEmpty()) {
+								processSSEChunk(sseData, fullContent, fullReasoning,  finalResponse, responseStream);
+							}
 						}
+						// Handle other SSE fields if needed (event:, id:, retry:)
+						else if (line.startsWith("event: ") || line.startsWith("id: ") || line.startsWith("retry: ")) {
+							// These can be logged or processed if needed for debugging
+						}
+						// Empty lines separate SSE events - can be ignored
 					}
 				}
 
@@ -101,6 +92,9 @@ public class StreamingUtil {
 
 				// Set the accumulated content in final response
 				finalResponse.setResponse(new ContentWrapper(ContentType.TEXT, fullContent.toString()));
+				if(fullReasoning.length() > 0) {
+					finalResponse.setReasoningContent(fullReasoning.toString());
+				}
 				return finalResponse;
 
 			} catch (IOException | LLMException e) {
@@ -111,35 +105,111 @@ public class StreamingUtil {
 	}
 
 	/**
-	 * Processes streaming response from a ResponseBody source.
-	 * This method reads the stream line by line and processes SSE events.
-	 * 
+	 * Processes streaming response from a ResponseBody source in real-time.
+	 * This method reads the stream line by line as data arrives from the network.
+	 *
 	 * @param responseBody   the response body containing SSE data
 	 * @param responseStream callback interface for handling tokens
-	 * 
+	 *
 	 * @return Future containing the complete accumulated response
 	 */
 	public Future<CompletionResponse> processStreamingFromBody(ResponseBody responseBody, ResponseStream responseStream) {
 		return executorService.submit(() -> {
 			StringBuilder      fullContent   = new StringBuilder();
+			StringBuilder      fullReasoning = new StringBuilder();
 			CompletionResponse finalResponse = new CompletionResponse();
 
 			try {
-				String   responseString = responseBody.string();
-				String[] lines          = responseString.split("\\r?\\n");
+				// Use character stream for real-time line-by-line reading
+				try (BufferedReader reader = new BufferedReader(responseBody.charStream())) {
+					String line;
 
-				for (String line : lines) {
-					if (line.startsWith("data: ")) {
-						String sseData = line.substring(6).trim();
+					// Read each line as it arrives from the network
+					while ((line = reader.readLine()) != null) {
+						if (line.startsWith("data: ")) {
+							String sseData = line.substring(6).trim();
 
-						if ("[DONE]".equals(sseData)) {
-							break;
+							if ("[DONE]".equals(sseData)) {
+								break;
+							}
+
+							if (!sseData.isEmpty()) {
+								processSSEChunk(sseData, fullContent, fullReasoning, finalResponse, responseStream);
+							}
 						}
-
-						if (!sseData.isEmpty()) {
-							processSSEChunk(sseData, fullContent, finalResponse, responseStream);
+						// Handle other SSE fields if needed (event:, id:, retry:)
+						else if (line.startsWith("event: ") || line.startsWith("id: ") || line.startsWith("retry: ")) {
+							// These can be logged or processed if needed for debugging
 						}
+						// Empty lines separate SSE events - can be ignored
 					}
+				}
+
+				responseStream.onComplete();
+				String fullText = fullContent.toString();
+				finalResponse.setResponse(new ContentWrapper(ContentType.TEXT, fullText));
+				if(fullReasoning.length() > 0) {
+					finalResponse.setReasoningContent(fullReasoning.toString());
+				} else {
+					if(fullText.contains("<think>") && fullText.contains("</think>")) {
+						String reasoning = fullText.substring(fullText.indexOf("<think>") + 8, fullText.indexOf("</think>"));
+						finalResponse.setReasoningContent(reasoning.trim());
+						// must remove reasoning from content  						
+						int start = fullText.indexOf("<think>");
+						int end = fullText.indexOf("</think>") + 9;
+						String cleanedContent = fullText.substring(0, start) + fullText.substring(end);
+						finalResponse.setResponse(new ContentWrapper(ContentType.TEXT, cleanedContent.trim()));
+					}
+				}
+				return finalResponse;
+
+			} catch (Exception e) {
+				responseStream.onError(e);
+				throw new RuntimeException("Failed to process streaming response", e);
+			}
+		});
+	}
+
+	/**
+	 * Processes streaming response using byte-level reading for maximum real-time performance.
+	 * This method processes data as soon as bytes arrive from the network.
+	 *
+	 * @param responseBody   the response body containing SSE data
+	 * @param responseStream callback interface for handling tokens
+	 *
+	 * @return Future containing the complete accumulated response
+	 */
+	public Future<CompletionResponse> processStreamingFromByteStream(ResponseBody responseBody, ResponseStream responseStream) {
+		return executorService.submit(() -> {
+			StringBuilder      fullContent   = new StringBuilder();
+			StringBuilder	  fullReasoning = new StringBuilder();
+			CompletionResponse finalResponse = new CompletionResponse();
+			StringBuilder      lineBuffer    = new StringBuilder();
+
+			try (java.io.InputStream inputStream = responseBody.byteStream();
+			     java.io.InputStreamReader reader = new java.io.InputStreamReader(inputStream, "UTF-8")) {
+
+				int ch;
+				// Read character by character as data arrives
+				while ((ch = reader.read()) != -1) {
+					char character = (char) ch;
+
+					// Build line character by character
+					if (character == '\n' || character == '\r') {
+						if (lineBuffer.length() > 0) {
+							String line = lineBuffer.toString();
+							processSSELine(line, fullContent, fullReasoning, finalResponse, responseStream);
+							lineBuffer.setLength(0); // Clear buffer
+						}
+					} else {
+						lineBuffer.append(character);
+					}
+				}
+
+				// Process any remaining content in buffer
+				if (lineBuffer.length() > 0) {
+					String line = lineBuffer.toString();
+					processSSELine(line, fullContent, fullReasoning, finalResponse, responseStream);
 				}
 
 				responseStream.onComplete();
@@ -154,6 +224,36 @@ public class StreamingUtil {
 	}
 
 	/**
+	 * Processes a single SSE line.
+	 *
+	 * @param line           the SSE line to process
+	 * @param fullContent    accumulator for full response content
+	 * @param finalResponse  the final response object being built
+	 * @param responseStream callback for token events
+	 */
+	private void processSSELine(String line,
+	                            StringBuilder fullContent,
+	                            StringBuilder fullReasoning,
+	                            CompletionResponse finalResponse,
+	                            ResponseStream responseStream) {
+		if (line.startsWith("data: ")) {
+			String sseData = line.substring(6).trim();
+
+			if ("[DONE]".equals(sseData)) {
+				return; // Stream completed signal
+			}
+
+			if (!sseData.isEmpty()) {
+				processSSEChunk(sseData, fullContent, fullReasoning, finalResponse, responseStream);
+			}
+		}
+		// Handle other SSE fields if needed (event:, id:, retry:)
+		else if (line.startsWith("event: ") || line.startsWith("id: ") || line.startsWith("retry: ")) {
+			// These can be logged or processed if needed for debugging
+		}
+	}
+
+	/**
 	 * Processes a single SSE data chunk.
 	 * 
 	 * @param sseData        the SSE data (JSON string)
@@ -163,15 +263,22 @@ public class StreamingUtil {
 	 */
 	private void processSSEChunk(String sseData,
 	                             StringBuilder fullContent,
+	                             StringBuilder fullReasoning,
 	                             CompletionResponse finalResponse,
 	                             ResponseStream responseStream) {
 		try {
 			CompletionResponse chunk = jsonMapper.fromStreamingChunk(sseData);
-			if (chunk != null && chunk.getResponse() != null) {
-				String content = chunk.getResponse().getText();
+			if (chunk != null ) {
+				String content = (chunk.getResponse()!=null)? chunk.getResponse().getText() : null;
+				String reasoning = chunk.getReasoningContent();
+				
 				if (content != null) {
 					fullContent.append(content);
-					responseStream.onToken(content);
+					responseStream.onToken(content, ResponseStream.ContentType.TEXT);
+				}
+				if (reasoning != null) {
+					fullReasoning.append(reasoning);
+					responseStream.onToken(reasoning, ResponseStream.ContentType.REASONING);
 				}
 
 				// Update metadata from chunk

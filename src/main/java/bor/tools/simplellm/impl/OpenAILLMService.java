@@ -18,6 +18,7 @@ import static bor.tools.simplellm.Model_Type.VISION;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -43,6 +44,7 @@ import bor.tools.simplellm.chat.Message;
 import bor.tools.simplellm.chat.MessageRole;
 import bor.tools.simplellm.exceptions.LLMAuthenticationException;
 import bor.tools.simplellm.exceptions.LLMException;
+import bor.tools.simplellm.exceptions.LLMIllegalArgumentException;
 import bor.tools.simplellm.exceptions.LLMNetworkException;
 import bor.tools.simplellm.exceptions.LLMRateLimitException;
 import bor.tools.simplellm.exceptions.LLMTimeoutException;
@@ -208,9 +210,11 @@ public class OpenAILLMService implements LLMService {
 		this.config = config;
 		this.jsonMapper = new OpenAIJsonMapper();
 		this.streamingUtil = new StreamingUtil(this.jsonMapper);
-		this.httpClient = new OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
-		            .readTimeout(60, TimeUnit.SECONDS)
+		this.httpClient = new OkHttpClient.Builder()
+		            .connectTimeout(30, TimeUnit.SECONDS)
+		            .readTimeout(300, TimeUnit.SECONDS)  // Longer timeout for streaming
 		            .writeTimeout(30, TimeUnit.SECONDS)
+		            .callTimeout(300, TimeUnit.SECONDS)  // Overall call timeout for long streams
 		            .build();
 	}
 
@@ -237,17 +241,12 @@ public class OpenAILLMService implements LLMService {
 	 */
 	protected Map<String, Object> postRequest(String endpoint, Map<String, Object> payload) throws LLMException {
 		try {
-			String url = config.getBaseUrl().endsWith("/") ? config.getBaseUrl() + endpoint : config.getBaseUrl()
-			            + "/"
-			            + endpoint;
-
+			String      url         = buildUrl(endpoint);
 			String      jsonPayload = jsonMapper.toJson(payload);
 			RequestBody body        = RequestBody.create(jsonPayload, JSON_MEDIA_TYPE);
 
 			Request request = new Request.Builder().url(url)
-			            .header("Authorization",
-			                    "Bearer "
-			                                + getApiToken())
+			            .header("Authorization", "Bearer " + getApiToken())
 			            .header("Content-Type", "application/json")
 			            .post(body)
 			            .build();
@@ -257,11 +256,82 @@ public class OpenAILLMService implements LLMService {
 			}
 
 		} catch (IOException e) {
+			e.printStackTrace();
+			logger.error("Network error during API request: {}", e.getMessage(), e);
 			throw new LLMNetworkException("Network error during API request: "
 			            + e.getMessage(), e);
 		}
 	}
+	
+	/**
+	 * Performs a HTTP GET request to the specified endpoint.
+	 * @param endpoint
+	 * @return
+	 * @throws LLMException
+	 */
+	protected Map<String,Object> getRequest(String endpoint) throws LLMException {
+		try {
+			String  url     = buildUrl(endpoint);
+			Request request = new Request.Builder().url(url)
+			            .header("Authorization",
+			                    "Bearer "
+			                                + getApiToken())
+			            .header("Content-Type", "application/json")
+			            .get()
+			            .build();
 
+			try (Response response = httpClient.newCall(request).execute()) {
+				return handleHttpResponse(response);
+			}
+		} catch (IOException e) {
+			throw new LLMNetworkException("Network error during API request: "
+			            + e.getMessage(), e);
+		}
+	}
+	
+	/**
+	 * Builds the full URL for the given endpoint.
+	 * 
+	 * @param endpoint the API endpoint (relative to baseUrl)
+	 * 
+	 * @return the full URL as a string
+	 */
+	private String buildUrl(String endpoint) {
+	    String baseUrl = config.getBaseUrl();
+	    
+	    // Remove trailing slash from baseUrl if present
+	    if (baseUrl.endsWith("/")) {
+	        baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+	    }
+	    
+	    // Ensure endpoint starts with /
+	    if (!endpoint.startsWith("/")) {
+	        endpoint = "/" + endpoint;
+	    }	    
+	    endpoint = endpoint.replaceAll("//+", "/"); // Remove double slashes in endpoint	    
+	    return baseUrl + endpoint;
+	}
+
+	/**
+	 * Retrieves the list of models currently installed and available in the server
+	 * @return Map of model names to Model objects
+	 * @throws LLMException
+	 */
+	public MapModels getInstalledModels() throws LLMException {
+		try {
+			var map = getRequest("/models");			
+			var models = jsonMapper.fromModelsRequest(map);	
+			MapModels installed = new MapModels();
+			installed.putAll(models);
+			return installed;
+		} catch (LLMException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new LLMException("Unexpected error retrieving models: "
+			            + e.getMessage(), e);
+		}
+	}
+	
 	/**
 	 * Handles HTTP response and converts to Map, handling errors appropriately.
 	 * 
@@ -282,8 +352,21 @@ public class OpenAILLMService implements LLMService {
 
 			// Handle different HTTP status codes
 			switch (response.code()) {
-				case 200:
-					return jsonMapper.fromJson(responseText);
+				case 200:{
+					Map<String,Object> map=null;
+					// response can be a JSON or a plain text (for images) 
+					if(response.header("Content-Type","").contains("application/json")==true) {
+						map = jsonMapper.fromJson(responseText)	;				
+						map.put("response", responseText);
+						return map;
+					}else {		
+						map = new LinkedHashMap<>();
+						map.put("data", responseText);
+						return map;
+					}
+					
+					
+				}
 				case 401:
 					throw new LLMAuthenticationException("Authentication failed: Invalid API key.\n\t"
 					            + responseText
@@ -461,10 +544,9 @@ public class OpenAILLMService implements LLMService {
 	@Override
 	public CompletionResponse completion(String system, String query, MapParam params) throws LLMException {
 
-		if (query == null || query.trim().isEmpty()) {
+		if (system==null && (query == null || query.trim().isEmpty())) {
 			throw new LLMException("Query cannot be null or empty");
 		}
-
 		params = fixParams(params);
 
 		// Use chat completions endpoint (recommended approach)
@@ -473,7 +555,6 @@ public class OpenAILLMService implements LLMService {
 			chat.addSystemMessage(system.trim());
 		}
 		return chatCompletion(chat, query, params);
-
 	}
 
 	/**
@@ -661,32 +742,39 @@ public class OpenAILLMService implements LLMService {
 			throw new LLMException("Chat session cannot be null");
 		}
 
-		params = fixParams(params);
-
+		var checkedParams = checkParams(chat, params);
+		if(params.isStream()==Boolean.TRUE) {
+			params.stream(null); // ensureStreaming is disabled
+		}
 		// Create request payload
-		Map<String, Object> payload = jsonMapper.toChatCompletionRequest(chat, query, params);
+		Map<String, Object> payload = jsonMapper.toChatCompletionRequest(chat, query, checkedParams);
 
 		try {
 			// Make API request
 			Map<String, Object> response = postRequest("chat/completions", payload);
-
 			// Convert response
 			CompletionResponse completionResponse = jsonMapper.fromChatCompletionResponse(response);
+
 			if (chat.getId() == null) {
 				chat.setId(completionResponse.getChatId());
 			} else {
 				completionResponse.setChatId(chat.getId());
 			}
-
 			// Add the user query to chat if provided
-			if (query != null && !query.trim().isEmpty()) {
-				var usage = completionResponse.getUsage();
-				chat.addUserMessage(query.trim(), usage);
+			if (chat != null && query != null) {
+				chat.addUserMessage(query.trim());
 			}
 
 			// Add assistant response to chat
-			if (completionResponse.getResponse() != null && completionResponse.getResponse().getText() != null) {
-				chat.addAssistantMessage(completionResponse.getResponse().getText());
+			var responseMessage = completionResponse.getResponse();
+			if (responseMessage != null && responseMessage.getText() != null) {
+				String respText  = responseMessage.getText().trim();
+				String reasoning = completionResponse.getReasoningContent();
+				if (reasoning != null) {
+					chat.addAssistantMessage(respText, reasoning);					
+					completionResponse.setReasoningEffort(params.getReasoningEffort());
+				} else
+					chat.addAssistantMessage(respText);
 			}
 
 			return completionResponse;
@@ -700,23 +788,42 @@ public class OpenAILLMService implements LLMService {
 	}
 
 	/**
+	 * Fix params, assuming Chat is null.
+	 * 
+	 * @param params parameters to test.
+	 * @return
+	 */
+	protected MapParam fixParams(MapParam params) throws LLMException {	
+		return fixParams(params, null);
+	}
+	/**
 	 * Fix MapParams for specific endpoints and models.
 	 * 
 	 * @param params the parameters to fix, may be null
+	 * @param chat Chat instance, to help fix some parameters
 	 */
-	protected MapParam fixParams(MapParam params) {
+	protected MapParam fixParams(MapParam params, Chat chat) throws LLMException {
 		if (params == null) {
 			params = new MapParam();
 		}
-
+        
+		if(chat != null && params.getModel()==null && chat.getModel()!=null) {
+			params.model(chat.getModel().toString());
+		}
+		
 		// Ensure model is properly set
-		String modelName = resolveModelName(params);
-		params.put("model", modelName);
+		Model model = resolveModel(params);
+		params.model(model);
+		
+		if(chat!=null && chat.getModel()==null) {
+			chat.setModel(model);
+		}
 
 		// Apply OpenAI-specific parameter adjustments
-		if (requiresOpenAIParameterAdjustment(modelName)) {
+		if (requiresOpenAIParameterAdjustment(model)) {
 			adjustParametersForOpenAI(params);
 		}
+		
 		return params;
 	}
 
@@ -727,9 +834,29 @@ public class OpenAILLMService implements LLMService {
 	 * 
 	 * @return the resolved model name
 	 */
-	private String resolveModelName(MapParam params) {
+	protected Model resolveModel(MapParam params) throws LLMException {
 		Object modelObj = params.getModel();
-		return modelObj != null ? modelObj.toString() : getDefaultModelName();
+		if (modelObj instanceof Model)
+			return (Model) modelObj;
+		else {
+			String modelName = modelObj != null ? modelObj.toString() : getDefaultModelName();
+			Model  m         = getLLMConfig().getModel(modelName);
+			if (m == null) {
+				logger.warn("Model {} not found in configuration, using default model {}",
+				            modelName,
+				            getDefaultModelName());
+				m = getLLMConfig().getModel(getDefaultModelName());
+			}
+			if (m == null) {
+				throw new LLMIllegalArgumentException ("Model "
+				            + modelName
+				            + " not found in configuration, and default model "
+				            + getDefaultModelName()
+				            + " also not found.");
+			}
+			return m;
+		}
+
 	}
 
 	/**
@@ -739,13 +866,11 @@ public class OpenAILLMService implements LLMService {
 	 * 
 	 * @return true if adjustments are needed
 	 */
-	private boolean requiresOpenAIParameterAdjustment(String modelName) {
+    boolean requiresOpenAIParameterAdjustment(Model model) {
 		if (!isOpenAIEndpoint()) {
 			return false;
-		}
-
-		Model model = config.getModelMap().get(modelName);
-		return isResponsesAPIModel(modelName) || (model != null && model.isType(GPT5_CLASS));
+		}		
+		return isResponsesAPIModel(model.toString()) || (model != null && model.isType(GPT5_CLASS));
 	}
 
 	/**
@@ -763,7 +888,9 @@ public class OpenAILLMService implements LLMService {
 	 * 
 	 * @return
 	 */
-	protected boolean isOpenAIEndpoint() { return config.getBaseUrl().toLowerCase().contains("openai"); }
+	protected boolean isOpenAIEndpoint() { 
+		return config.getBaseUrl().toLowerCase().contains("openai.com"); 
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -890,6 +1017,10 @@ public class OpenAILLMService implements LLMService {
 	 * Provides streaming text completion using OpenAI's server-sent events (SSE)
 	 * for real-time response generation.
 	 * </p>
+	 * <p>
+	 * This implementation uses true real-time streaming that processes data as it
+	 * arrives from the network, calling onToken() immediately when chunks are received.
+	 * </p>
 	 */
 	@Override
 	public CompletionResponse completionStream(ResponseStream stream, String system, String query, MapParam params)
@@ -914,12 +1045,37 @@ public class OpenAILLMService implements LLMService {
 		// Use chatCompletionStream for the actual streaming
 		return chatCompletionStream(stream, tempChat, null, params);
 	}
+	
+	/**
+	 * Check if all params are OK
+	 * @param chat
+	 * @return
+	 */
+	protected MapParam checkParams(Chat chat, MapParam params) throws LLMException {	
+		params = fixParams(params, chat);			
+		Model model = (Model) params.getModel();
+			
+		// Create parameters copy and enable streaming
+		MapParam checkedParams = new MapParam(params);		
+			
+		// apply reasoning effort if model supports it
+		if(model.isTypeReasoning() && params.getReasoningEffort()!=null) {
+			checkedParams.reasoningEffort(params.getReasoningEffort()); 
+		}else {
+			checkedParams.reasoningEffort(null);
+		 }		
+		return checkedParams;
+	}
 
 	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * Provides streaming chat completion using OpenAI's server-sent events (SSE)
 	 * for real-time conversation response generation.
+	 * </p>
+	 * <p>
+	 * This implementation uses true real-time streaming that processes data as it
+	 * arrives from the network, calling onToken() immediately when chunks are received.
 	 * </p>
 	 */
 	@Override
@@ -929,26 +1085,15 @@ public class OpenAILLMService implements LLMService {
 		if (chat == null) {
 			throw new LLMException("Chat session cannot be null");
 		}
-
 		if (stream == null) {
 			throw new LLMException("ResponseStream cannot be null");
-		}
-
-		params = fixParams(params);
-		// Determine model to use
-		String model = chat.getModel();
-		if (model == null || model.trim().isEmpty()) {
-			model = findModel(params);
-		}
-
-		params = fixParams(params);
-
-		// Create parameters copy and enable streaming
-		MapParam streamParams = new MapParam(params);
-		streamParams.put("stream", true);
-
+		}		
+		
+        var checkedParams = checkParams(chat, params); 
+        checkedParams.put("stream", true); // Ensure streaming is enabled
+		
 		// Create request payload
-		Map<String, Object> payload = jsonMapper.toChatCompletionRequest(chat, query, streamParams);
+		Map<String, Object> payload = jsonMapper.toChatCompletionRequest(chat, query, checkedParams);
 
 		try {
 			// Make streaming HTTP request
@@ -973,9 +1118,9 @@ public class OpenAILLMService implements LLMService {
 				            + errorBody);
 			}
 
-			// Process streaming response
+			// Process streaming response using real-time streaming
 			java.util.concurrent.Future<CompletionResponse> future =
-			            streamingUtil.processStreamingFromBody(response.body(), stream);
+			            streamingUtil.processStreamingResponse(response, stream);
 
 			// Wait for completion and return final response
 			CompletionResponse finalResponse = future.get();

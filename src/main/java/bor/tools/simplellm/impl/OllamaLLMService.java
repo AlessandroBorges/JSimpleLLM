@@ -35,7 +35,7 @@ import bor.tools.simplellm.exceptions.LLMException;
  * 
  * @see OpenAILLMService
  */
-public class OllamaLLMService extends OpenAILLMService {
+public class OllamaLLMService extends LMStudioLLMService {
 
 	static final String DEFAULT_PROMPT = "You are a helpful assistant who responds in the same language used as input.";
 
@@ -71,6 +71,22 @@ public class OllamaLLMService extends OpenAILLMService {
 		            .modelMap(map)
 		            .build();
 	}
+	
+	/**
+	 * Constructor for OllamaLLMService with custom configuration.
+	 * <p>
+	 * Creates a new instance with the specified LLM configuration,
+	 * including API settings and model definitions for Ollama.
+	 * </p>
+	 *
+	 * @param config the LLM configuration containing Ollama API settings and
+	 *               parameters
+	 */
+	public OllamaLLMService(LLMConfig config) {
+		super(config);
+		// Ollama doesn't support responses API, so disable it
+		this.useResponsesAPI = false;
+	}
 
 	/**
 	 * Retrieves the default LLM configuration for Ollama services.
@@ -103,7 +119,7 @@ public class OllamaLLMService extends OpenAILLMService {
 		var       name   = models.getModel(DEFAULT_MODEL);
 		if (name == null) {
 			// If default model not found, fallback to first available model
-			System.out.println("Warning: Default model '"
+			logger.warn("Warning: Default model '"
 			            + DEFAULT_MODEL
 			            + "' not found in configuration. "
 			            + "Falling back to first available model.");
@@ -113,25 +129,8 @@ public class OllamaLLMService extends OpenAILLMService {
 			            .filter(model -> isModelType(model.getName(), LANGUAGE))
 			            .findFirst()
 			            .orElse(null);
-
 		}
 		return name.toString();
-	}
-
-	/**
-	 * Constructor for OllamaLLMService with custom configuration.
-	 * <p>
-	 * Creates a new instance with the specified LLM configuration,
-	 * including API settings and model definitions for Ollama.
-	 * </p>
-	 *
-	 * @param config the LLM configuration containing Ollama API settings and
-	 *               parameters
-	 */
-	public OllamaLLMService(LLMConfig config) {
-		super(config);
-		// Ollama doesn't support responses API, so disable it
-		this.useResponsesAPI = false;
 	}
 
 	/**
@@ -183,50 +182,5 @@ public class OllamaLLMService extends OpenAILLMService {
 		return params;
 	}
 
-	/**
-	 * Check if a model supports a specific capability.
-	 * This is useful for Ollama where model capabilities might vary.
-	 */
-	@Override
-	public boolean isModelType(String modelName, bor.tools.simplellm.Model_Type type) {
-		if (modelName == null) {
-			return false;
-		}
-
-		Model model = config.getModelMap().get(modelName);
-		if (model != null) {
-			return model.getTypes().contains(type);
-		}
-
-		// Fallback to name-based detection for common Ollama models
-		switch (type) {
-			case VISION:
-				return modelName.toLowerCase().contains("llava") || modelName.toLowerCase().contains("vision");
-			case CODING:
-				return modelName.toLowerCase().contains("code") || modelName.toLowerCase().contains("starcoder")
-				       || modelName.toLowerCase().contains("codestral");
-			case EMBEDDING:
-				return modelName.toLowerCase().contains("embed") || modelName.toLowerCase().contains("bge")
-				       || modelName.toLowerCase().contains("nomic");
-			default:
-				return true; // Most Ollama models support basic language tasks
-		}
-	}
-
-	/**
-	 * Override embeddings to throw exception since most Ollama models don't support
-	 * embeddings
-	 * unless specifically configured with an embedding model.
-	 */
-	@Override
-	public float[] embeddings(Emb_Operation op, String texto, MapParam params)
-	            throws LLMException {
-         Object model = params.get("model");
-         if (model == null || model.toString().trim().isEmpty()) {
-			 throw new LLMException("Model parameter is required for embeddings.");        	
-         }
-		// Call parent implementation
-		return super.embeddings(op, texto, params);
-	}
 
 }

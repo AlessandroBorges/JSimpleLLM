@@ -215,7 +215,7 @@ class OpenAIStreamingTest extends OpenAILLMServiceTestBase {
 		private final CountDownLatch             completionLatch = new CountDownLatch(1);
 
 		@Override
-		public void onToken(String token) {
+		public void onToken(String token, ContentType type) {
 			tokens.add(token);
 			System.err.println("Received token: "
 			            + token);

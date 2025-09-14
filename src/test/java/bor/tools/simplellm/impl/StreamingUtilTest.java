@@ -146,12 +146,18 @@ class StreamingUtilTest {
 	 */
 	public static class TestResponseStream implements ResponseStream {
 		private final List<String>               tokens    = new ArrayList<>();
+		private final List<String>               tokensReasoning    = new ArrayList<>();
+		private final List<String>               tokensToolCalls    = new ArrayList<>();
 		private final AtomicBoolean              completed = new AtomicBoolean(false);
 		private final AtomicReference<Throwable> error     = new AtomicReference<>();
 
 		@Override
-		public void onToken(String token) {
-			tokens.add(token);
+		public void onToken(String token, ContentType type) {
+			switch (type) {
+				case TEXT -> tokens.add(token);
+				case REASONING -> tokensReasoning.add(token);
+				default -> tokensToolCalls.add(token); // For simplicity, add others tokensToolCalls
+			}			
 		}
 
 		@Override
@@ -165,6 +171,10 @@ class StreamingUtilTest {
 		}
 
 		public List<String> getTokens() { return new ArrayList<>(tokens); }
+		
+		public List<String> getTokensReasoning() { return new ArrayList<>(tokensReasoning); }
+		
+		public List<String> getTokensToolCalls() { return new ArrayList<>(tokensToolCalls); }
 
 		public boolean isCompleted() { return completed.get(); }
 

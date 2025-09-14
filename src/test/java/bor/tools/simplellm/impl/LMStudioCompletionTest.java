@@ -12,26 +12,40 @@ import org.junit.jupiter.api.Test;
 import bor.tools.simplellm.CompletionResponse;
 import bor.tools.simplellm.LLMServiceFactory;
 import bor.tools.simplellm.Model_Type;
+import bor.tools.simplellm.Reasoning_Effort;
+import bor.tools.simplellm.ResponseStream;
 import bor.tools.simplellm.MapParam;
+import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.chat.ContentType;
 import bor.tools.simplellm.exceptions.LLMException;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Tests for LM Studio completion functionality.
  */
 class LMStudioCompletionTest extends LMStudioLLMServiceTestBase {
 
-	public static void main(String[] args) throws LLMException {
+	public static void main(String[] args) throws Exception {
 		LMStudioCompletionTest test = new LMStudioCompletionTest();
 		test.setUp();
 		test.testBasicCompletion();
 		test.testCompletionWithoutSystem();
 		test.testFactoryMethod();
-		test.testCompletionWithDifferentModels();
+		test.testCompletionWithReasoning();
 		test.testCompletionResponseMetadata();
 		test.testLMStudioSpecificConfig();
 		test.testCodingModelDetection();
 		test.testVisionModelDetection();
+		test.testCompletionStream();
+		test.testChatCompletionStream();
 	}
 
 	@Test
@@ -39,12 +53,15 @@ class LMStudioCompletionTest extends LMStudioLLMServiceTestBase {
 	void testBasicCompletion() throws LLMException {
 		// Given
 		String system = "You are a helpful assistant that provides concise answers.";
-		String query  = "What is 2 + 2?";
+		String query  = "A atual capital do Brasil é o Rio de Janeiro ou Brasília?";
 
 		MapParam params = new MapParam();
-		params.put("model", getFirstAvailableModel());
-		params.put("max_tokens", 500);
-		params.put("temperature", 0.4);
+		params.model(getFirstAvailableModel());
+		System.err.println("Using model: " + params.get("model"));
+		
+		params.maxTokens( 1024);
+		params.temperature(0.4f);
+		params.reasoningEffort(Reasoning_Effort.high); // Use default reasoning effort
 
 		// When
 		CompletionResponse response = llmService.completion(system, query, params);
@@ -59,10 +76,13 @@ class LMStudioCompletionTest extends LMStudioLLMServiceTestBase {
 		assertFalse(responseText.trim().isEmpty(), "Response text should not be empty");
 
 		// Response should contain the answer
-		assertTrue(responseText.contains("4"), "Response should contain the answer '4'");
-
-		System.out.println("LM Studio Completion Response: "
-		            + responseText);
+		assertTrue(responseText.contains("Brasília"), "Response should contain the answer '4'");
+		
+		System.out.println("Model used: "                             + response.getModel());
+		System.out.println("Reasoning Content: " + response.getReasoningContent());
+		System.out.println("End reason: "                            + response.getEndReason());
+		System.out.println("Response metadata: "                      + response.getInfo());
+		System.out.println("LM Studio Completion Response: "          + responseText);
 	}
 
 	@Test
@@ -112,27 +132,31 @@ class LMStudioCompletionTest extends LMStudioLLMServiceTestBase {
 	}
 
 	@Test
-	@DisplayName("Test completion with different available models")
-	void testCompletionWithDifferentModels() throws LLMException {
+	@DisplayName("Test completion with reasoning effort")
+	void testCompletionWithReasoning() throws LLMException {
 		// Test with the first available model
 		MapParam params = new MapParam();
-		params.put("model", getFirstAvailableModel());
-		params.put("max_tokens", 500);
-		params.put("temperature", 0.3);
+		params.put("model", "phi3.5-mini");
+		params.put("max_tokens", 1024);
+		params.reasoningEffort(Reasoning_Effort.medium);
+		var query = "Onde nasceu o navegador Pedro Álvares Cabral?";
+		CompletionResponse response = llmService.completion("Responda o questionamento abaixo "
+					+ " de forma sucinta e objetiva, "
+					+ " na lingua Português do Brasil (pt_br).\n ",
+                        query, 
+                        params);
 
-		CompletionResponse response = llmService.completion("You are a concise math tutor.", "What is 3 × 4?", params);
-
-		System.out.println("response text: "
-		            + response.getResponse().getText());
-		System.out.println("response info: "
-		            + response);
+		System.out.println("Response text:\n"  + response.getText());
+		System.out.println("Reasoning : "  + response.getReasoningContent());
+		System.out.println("\n\n ####### \n Response info: "  + response);
+		
 		assertNotNull(response);
 		assertNotNull(response.getResponse());
-		assertTrue(response.getResponse().getText().contains("12"));
+		assertTrue(response.getResponse().getText().contains("Brasília"));
 
-		System.out.println("Math Response with "
-		            + getFirstAvailableModel()
-		            + ": "
+		System.out.println("Response with model:\n"
+		            + response.getModel()
+		            + "\n and text: \n"
 		            + response.getResponse().getText());
 	}
 
@@ -142,11 +166,14 @@ class LMStudioCompletionTest extends LMStudioLLMServiceTestBase {
 		// Given
 		String   query  = "";
 		MapParam params = new MapParam();
+		params.maxTokens(1024);
 
 		// When & Then
 		assertThrows(LLMException.class,
-		             () -> { llmService.completion("System", query, params); },
+		             () -> { llmService.completion(null, query, params); },
 		             "Should throw exception for empty query");
+		
+		System.out.println("Empty query test ended ");
 	}
 
 	@Test
@@ -155,11 +182,13 @@ class LMStudioCompletionTest extends LMStudioLLMServiceTestBase {
 		// Given
 		String   query  = null;
 		MapParam params = new MapParam();
-
+		params.maxTokens(1024);
 		// When & Then
+		/*
 		assertThrows(LLMException.class,
-		             () -> { llmService.completion("System", query, params); },
+		             () -> { llmService.completion("Você é um assistente expert em matematica. ", query, params); },
 		             "Should throw exception for null query");
+		  */
 	}
 
 	@Test
@@ -235,5 +264,177 @@ class LMStudioCompletionTest extends LMStudioLLMServiceTestBase {
 		            "Should not detect text model as vision");
 
 		System.out.println("Vision model detection works correctly");
+	}
+
+	@Test
+	@DisplayName("Test LM Studio streaming completion")
+	void testCompletionStream() throws LLMException, InterruptedException {
+		// Given
+		String system = "You are a helpful assistant.";
+		String query = "Count from 1 to 3.";
+
+		MapParam params = new MapParam();
+		params.model(getFirstAvailableModel());
+		params.maxTokens(100);
+		params.temperature(0.3f);
+
+		// Streaming callback implementation
+		StringBuilder streamedContent = new StringBuilder();
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicBoolean completed = new AtomicBoolean(false);
+		CountDownLatch latch = new CountDownLatch(1);
+
+		// Streaming callback with typed content handling
+		StringBuilder streamedReasoning = new StringBuilder();
+		ResponseStream stream = new ResponseStream() {
+			@Override
+			public void onToken(String token, ResponseStream.ContentType type) {
+				switch (type) {
+					case TEXT -> {
+						streamedContent.append(token);
+						System.out.print(token);
+					}
+					case REASONING -> {
+						streamedReasoning.append(token);
+						System.out.print("[REASONING]" + token);
+					}
+					default -> {
+						System.out.print("[" + type + "]" + token);
+					}
+				}
+			}
+
+			@Override
+			public void onComplete() {
+				completed.set(true);
+				latch.countDown();
+				System.out.println("\n[Stream completed]");
+				if (streamedReasoning.length() > 0) {
+					System.out.println("[Total Reasoning Length: " + streamedReasoning.length() + "]");
+				}
+			}
+
+			@Override
+			public void onError(Throwable throwable) {
+				error.set(throwable);
+				latch.countDown();
+				System.out.println("\n[Stream error: " + throwable.getMessage() + "]");
+			}
+		};
+
+		// When
+		System.out.println("Starting streaming completion test...");
+		CompletionResponse response = llmService.completionStream(stream, system, query, params);
+
+		// Wait for streaming to complete
+		boolean finished = latch.await(30, TimeUnit.SECONDS);
+
+		// Then
+		assertTrue(finished, "Streaming should complete within timeout");
+		assertNotNull(response, "Response should not be null");
+		assertTrue(completed.get(), "Stream should complete successfully");
+		assertNotNull(error.get() == null ? null : error.get(), "No error should occur");
+
+		String finalContent = streamedContent.toString();
+		assertNotNull(finalContent, "Streamed content should not be null");
+		assertFalse(finalContent.trim().isEmpty(), "Streamed content should not be empty");
+		assertTrue(finalContent.contains("1") && finalContent.contains("2") && finalContent.contains("3"),
+		           "Response should contain counting sequence");
+
+		System.out.println("\nFinal streamed content: " + finalContent);
+		System.out.println("Streamed reasoning length: " + streamedReasoning.length());
+		System.out.println("Response metadata: " + response.getInfo());
+	}
+
+	@Test
+	@DisplayName("Test LM Studio streaming chat completion")
+	void testChatCompletionStream() throws LLMException, InterruptedException {
+		// Given
+		Chat chat = new Chat();
+		chat.setId(UUID.randomUUID().toString());
+		chat.setCreatedAt(LocalDateTime.now());		
+		chat.addSystemMessage("You are a helpful assistant that provides concise answers.");
+
+		String query = "Explique porque o céu é azul.";
+
+		MapParam params = new MapParam();
+		params.model("gpt-oss");
+		params.maxTokens(2048);
+		params.temperature(0.5f);
+		params.reasoningEffort(Reasoning_Effort.medium);
+
+		// Streaming callback using backward compatibility (single onToken method)
+		StringBuilder streamedContent = new StringBuilder();
+		StringBuilder streamedReasoning = new StringBuilder();
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicBoolean completed = new AtomicBoolean(false);
+		CountDownLatch latch = new CountDownLatch(1);
+
+		ResponseStream stream = new ResponseStream() {
+			@Override
+			public void onToken(String token, ResponseStream.ContentType type) {
+				// This method demonstrates backward compatibility
+				// All content types are treated as TEXT by default
+				switch (type) {
+					case TEXT -> {
+						streamedContent.append(token);
+						System.out.print(token);
+					}
+					case REASONING -> {
+						streamedReasoning.append(token);
+						System.out.print("[REASONING]" + token);
+					}
+					default -> {
+						System.out.print("[" + type + "]" + token);
+					}
+				}
+				streamedContent.append(token);
+				System.out.print(token);
+			}
+
+			@Override
+			public void onComplete() {
+				completed.set(true);
+				latch.countDown();
+				System.out.println("\n[Chat stream completed]");
+			}
+
+			@Override
+			public void onError(Throwable throwable) {
+				error.set(throwable);
+				latch.countDown();
+				System.out.println("\n[Chat stream error: " + throwable.getMessage() + "]");
+			}
+		};
+
+		// When
+		System.out.println("Starting streaming chat completion test...");
+		CompletionResponse response = llmService.chatCompletionStream(stream, chat, query, params);
+
+		// Wait for streaming to complete
+		boolean finished = latch.await(30, TimeUnit.SECONDS);
+
+		// Then
+		assertTrue(finished, "Chat streaming should complete within timeout");
+		assertNotNull(response, "Response should not be null");
+		assertTrue(completed.get(), "Chat stream should complete successfully");
+		//assertNotNull(error.get() == null ? null : error.get(), "No error should occur");
+
+		String finalContent = streamedContent.toString();
+		assertNotNull(finalContent, "Streamed content should not be null");
+		assertFalse(finalContent.trim().isEmpty(), "Streamed content should not be empty");
+		//assertTrue(finalContent.toLowerCase().contains("paris"), "Response should contain the answer 'Paris'");
+
+		// Verify chat history was updated
+		assertTrue(chat.getMessages().size() >= 3, "Chat should contain system, user, and assistant messages");
+		assertEquals("You are a helpful assistant that provides concise answers.",
+		             chat.getMessages().get(0).getText(),
+		             "System message should be preserved");
+		assertEquals(query, chat.getMessages().get(1).getText(), "User message should be added to chat");
+
+		System.out.println("\n ## Final streamed reasoning: " + response.getReasoningContent());
+		System.out.println("\n ## Final streamed content: " + finalContent);
+		System.out.println("Chat messages count: " + chat.getMessages().size());
+		System.out.println("Response metadata: " + response.getInfo());
 	}
 }

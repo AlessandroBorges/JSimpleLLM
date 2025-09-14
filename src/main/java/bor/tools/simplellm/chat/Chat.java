@@ -13,20 +13,18 @@ import bor.tools.simplellm.Utils;
 import lombok.Data;
 
 /**
- * Representa uma sessão de chat com o modelo de linguagem.
+ * Represents a chat session with a language model.
  * <p>
- * Esta classe encapsula todas as informações relacionadas a uma única
- * conversa, incluindo seu identificador único, timestamps, a sequência
- * de mensagens e configurações específicas para o modelo e ferramentas.
+ * This class encapsulates all information related to a single conversation, including its unique identifier,
+ * timestamps, the sequence of exchanged messages, and specific configurations for the model and tools.
  * </p>
  * <p>
- * A anotação {@code @Data} do Lombok gera automaticamente os métodos
- * getters, setters, {@code toString()}, {@code equals()} e {@code hashCode()}.
+ * The {@code @Data} annotation from Lombok automatically generates getters, setters, {@code toString()},
+ * {@code equals()}, and {@code hashCode()} methods.
  * </p>
  * <p>
- * <b>Exemplo de uso:</b>
+ * <b>Usage example:</b>
  * </p>
- * 
  * <pre>{@code
  * Chat chat = new Chat();
  * chat.setId(UUID.randomUUID().toString());
@@ -78,7 +76,7 @@ public class Chat {
 	 * Permite que diferentes chats utilizem diferentes modelos, sobrescrevendo
 	 * a configuração padrão do sistema.
 	 */
-	private String model;
+	private Object model;
 
 	/**
 	 * O gerenciador de contexto para esta sessão de chat.
@@ -114,22 +112,42 @@ public class Chat {
 		this(id);
 		this.contextManage = contextManage;
 	}
+	
+	
+	/**
+	 * Returns the language model used for this chat session.
+	 * <p>
+	 * If the {@code model} field is set, it is returned. Otherwise, if {@code mapParam}
+	 * contains a model entry, that value is returned. Returns {@code null} if no model is set.
+	 * </p>
+	 * @return the model object or {@code null} if not set
+	 */
+	public Object getModel() {
+		if (this.model != null) {
+			return this.model;
+		}
+		if (this.mapParam != null && this.mapParam.containsKey(MapParam.MODEL)) {
+			return this.mapParam.get(MapParam.MODEL);
+		}
+		return null;
+	}
 
 	/**
-	 * Atualiza o timestamp do último acesso para o momento atual.
-	 * Deve ser chamado sempre que houver uma interação com a sessão de chat.
+	 * Updates the timestamp of the last access to the current time.
+	 * <p>
+	 * Should be called whenever there is an interaction with the chat session.
+	 * </p>
 	 */
 	public void updateLastAccess() {
 		this.lastAccess = LocalDateTime.now();
 	}
 
 	/**
-	 * Adiciona uma nova mensagem à lista de mensagens do chat.
-	 * Atualiza o timestamp do último acesso.
-	 * 
-	 * @param msg a mensagem a ser adicionada
+	 * Adds a new message to the chat message list and updates the last access timestamp.
+	 *
+	 * @param msg the message to add
+	 * @return the added message
 	 */
-
 	public Message addMessage(Message msg) {
 		this.messages.add(msg);
 		updateLastAccess();
@@ -137,11 +155,10 @@ public class Chat {
 	}
 
 	/**
-	 * Procura uma mensagem na lista pelo seu ID.
-	 * 
-	 * @param id o UUID da mensagem a ser encontrada
-	 * 
-	 * @return a mensagem se encontrada, ou null se não existir
+	 * Searches for a message in the list by its ID.
+	 *
+	 * @param id the UUID of the message to find
+	 * @return the message if found, or {@code null} if not found
 	 */
 	public Message findMessage(UUID id) {
 		for (Message m : this.messages) {
@@ -153,15 +170,11 @@ public class Chat {
 	}
 
 	/**
-	 * Retorna a mensagem na posição especificada da lista.
-	 * Atualiza o timestamp do último acesso.
-	 * 
-	 * @param index o índice da mensagem a ser retornada
-	 * 
-	 * @return a mensagem na posição especificada
-	 * 
-	 * @throws IndexOutOfBoundsException se o índice estiver fora do intervalo
-	 *                                   (index < 0 || index >= size())
+	 * Returns the message at the specified index and updates the last access timestamp.
+	 *
+	 * @param index the index of the message to return
+	 * @return the message at the specified index
+	 * @throws IndexOutOfBoundsException if the index is out of range
 	 */
 	public Message getMessage(int index) {
 		updateLastAccess();
@@ -169,8 +182,7 @@ public class Chat {
 	}
 
 	/**
-	 * Remove todas as mensagens da lista.
-	 * Atualiza o timestamp do último acesso.
+	 * Removes all messages from the chat and updates the last access timestamp.
 	 */
 	public void clearMessages() {
 		updateLastAccess();
@@ -179,6 +191,11 @@ public class Chat {
 		}
 	}
 
+	/**
+	 * Returns the number of messages in the chat.
+	 *
+	 * @return the message count
+	 */
 	public int messageCount() {
 		if (this.messages == null) {
 			return 0;
@@ -186,6 +203,12 @@ public class Chat {
 		return this.messages.size();
 	}
 
+	/**
+	 * Returns the last message in the chat, or {@code null} if the list is empty.
+	 * Updates the last access timestamp.
+	 *
+	 * @return the last message or {@code null}
+	 */
 	public Message getLastMessage() {
 		updateLastAccess();
 		if (this.messages == null || this.messages.isEmpty()) {
@@ -193,7 +216,69 @@ public class Chat {
 		}
 		return this.messages.getLast();
 	}
+	
+	/**
+	 * Get the text from the last Message, if available.
+	 * @return the text of the last message or null if not available
+	 */
+	public String getLastMessageText() {
+		Message m = getLastMessage();
+		if(m!=null) {
+			return m.getText();
+		}
+		return null;
+	}
+	
+	/**
+	 * Get the reasoning from last Message, if available.	
+	 * @return the reasoning text or null if not available
+	 */
+	public String getLastMessageReasoning() {
+		Message m = getLastMessage();
+		if(m!=null) {
+			return m.getReasoning();
+		}
+		return null;
+	}
+	
+	/**
+	 * Returns the last system/developer message in the chat, or {@code null} if not found.
+	 *
+	 * @return the last system message, or {@code null} if not found
+	 */	
+	public Message getLastSystemMessage() {
+		return getLastMessage(MessageRole.SYSTEM);
+	}
+	
+	/**
+	 * Returns the last message in the chat with the specified role, or {@code null} if not found.
+	 *
+	 * @param role the role of the message to find
+	 * @return the last message with the specified role, or {@code null} if not found
+	 */
+	public Message getLastMessage(MessageRole role) {
+		if (this.messages == null || this.messages.isEmpty()) {
+			return null;
+		}		
+		for (int i = this.messages.size() -1; i >=0; i--) {
+			Message m = this.messages.get(i);
+			if (m.getRole() == role) {
+				return m;
+			}
+		}
+		// fall back for SYSTEM role to return last DEVELOPER message
+		if(role==MessageRole.SYSTEM) {
+			return getLastMessage(MessageRole.DEVELOPER);			
+		}
+		return null;
+	}
 
+	/**
+	 * Returns the first message in the chat, or {@code null} if the list is empty.
+	 * Updates the last access timestamp.
+	 *
+	 * @return the first message or {@code null}
+	 */
 	public Message getFirstMessage() {
 		updateLastAccess();
 		if (this.messages == null || this.messages.isEmpty()) {
@@ -203,14 +288,22 @@ public class Chat {
 	}
 
 	/**
-	 * @return A última mensagem removida da lista, ou null se a lista estiver
-	 *         vazia.
+	 * Removes and returns the last message in the chat, or {@code null} if the list is empty.
+	 * Updates the last access timestamp.
+	 *
+	 * @return the last removed message or {@code null}
 	 */
 	public Message popMessage() {
 		updateLastAccess();
 		return removeLastMessage();
 	}
 
+	/**
+	 * Removes and returns the last message in the chat, or {@code null} if the list is empty.
+	 * Updates the last access timestamp.
+	 *
+	 * @return the last removed message or {@code null}
+	 */
 	public Message removeLastMessage() {
 		updateLastAccess();
 		if (this.messages == null || this.messages.isEmpty()) {
@@ -219,36 +312,91 @@ public class Chat {
 		return this.messages.removeLast();
 	}
 
+	/**
+	 * Returns the number of messages in the chat.
+	 *
+	 * @return the message count
+	 */
 	public int size() {
 		return messageCount();
 	}
 
+	/**
+	 * Adds a system message to the chat.
+	 *
+	 * @param system the system message content
+	 * @return the added message
+	 */
 	public Message addSystemMessage(String system) {
 		Message m = new Message(MessageRole.SYSTEM, system);
 		return addMessage(m);
 	}
 
+	/**
+	 * Adds an assistant message to the chat.
+	 *
+	 * @param assistant the assistant message content
+	 * @return the added message
+	 */
 	public Message addAssistantMessage(String assistant) {
 		Message m = new Message(MessageRole.ASSISTANT, assistant);
 		return addMessage(m);
 	}
+	
+	/**
+	 * Adds an assistant message with reasoning to the chat.
+	 *
+	 * @param text the assistant message content
+	 * @param reasoning the reasoning for the response
+	 * @return the added message
+	 */
+	public Message addAssistantMessage(String text, String reasoning) {
+		Message m = new Message(MessageRole.ASSISTANT, text);
+		m.setReasoning(reasoning);
+		return addMessage(m);		
+	}
 
-	public Message addDeveloperMessage(String developer) {
-		Message m = new Message(MessageRole.DEVELOPER, developer);
+	/**
+	 * Adds a developer message to the chat.
+	 *
+	 * @param text the developer message content
+	 * @return the added message
+	 */
+	public Message addDeveloperMessage(String text) {
+		Message m = new Message(MessageRole.DEVELOPER, text);
 		return addMessage(m);
 	}
 
-	public Message addUserMessage(String user) {
-		Message m = new Message(MessageRole.USER, user);
+	/**
+	 * Adds a user message to the chat.
+	 *
+	 * @param text the user message content
+	 * @return the added message
+	 */
+	public Message addUserMessage(String text) {
+		Message m = new Message(MessageRole.USER, text);
 		return addMessage(m);
 	}
 
-	public Message addUserMessage(String user, MapParam usage) {
-		Message m = new Message(MessageRole.USER, user);
+	/**
+	 * Adds a user message to the chat with usage parameters.
+	 *
+	 * @param text the user message content
+	 * @param usage the usage parameters
+	 * @return the added message
+	 */
+	public Message addUserMessage(String text, MapParam usage) {
+		Message m = new Message(MessageRole.USER, text);
 		m.setUsage(usage);
 		return addMessage(m);
 	}
 
+	/**
+	 * Returns a JSON string representation of the chat.
+	 * If serialization fails, returns a simple string representation.
+	 *
+	 * @return the string representation of the chat
+	 */
 	@Override
 	public String toString() {
 		try {
@@ -264,5 +412,7 @@ public class Chat {
 			            + "}";
 		}
 	}
+
+	
 
 }
