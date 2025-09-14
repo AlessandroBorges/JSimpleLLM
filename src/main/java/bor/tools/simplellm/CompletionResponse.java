@@ -247,8 +247,10 @@ public class CompletionResponse {
 				}
 			}			
 			// check if text response has reasoning content inside <reasoning>...</reasoning> or <think>...</think>
-			String text = getText();
-			reasoningContent = extractReasoning(text);				
+			if (this.reasoningContent == null || this.reasoningContent.isEmpty()) {
+				String text = getText();
+				reasoningContent = extractReasoning(text);
+			}
 		}
 		return reasoningContent;
 	}
@@ -272,16 +274,12 @@ public class CompletionResponse {
 			int start = text.indexOf(REASONING);
 			int end = text.indexOf(REASONING_END);
 			if (start >= 0 && end > start) {
-				reasoning = text.substring(start, end + REASONING_END.length()).trim();
-				//text = text.replaceAll("(?s)<reasoning>.*?</reasoning>", "").trim();
-				//setText(text);
+				reasoning = text.substring(start, end + REASONING_END.length()).trim();				
 			} else {
 				start = text.indexOf(THINK);
 				end = text.indexOf(THINK_END);
 				if (start >= 0 && end > start) {
-					reasoning = text.substring(start, end + THINK_END.length()).trim();
-					//text = text.replaceAll("(?s)<think>.*?</think>", "").trim();
-					//this.setText(text);
+					reasoning = text.substring(start, end + THINK_END.length()).trim();					
 				}
 			}				
 		}	
