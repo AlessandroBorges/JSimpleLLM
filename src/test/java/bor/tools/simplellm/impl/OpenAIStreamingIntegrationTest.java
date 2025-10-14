@@ -264,7 +264,8 @@ class OpenAIStreamingIntegrationTest extends OpenAILLMServiceTestBase {
             }
         }
         
-        public List<Long> getTokenTimestamps() {
+        @SuppressWarnings("unused")
+		public List<Long> getTokenTimestamps() {
             synchronized (this) {
                 return new ArrayList<>(tokenTimestamps);
             }

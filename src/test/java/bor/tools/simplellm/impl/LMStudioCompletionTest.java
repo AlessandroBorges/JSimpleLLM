@@ -6,27 +6,24 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import bor.tools.simplellm.CompletionResponse;
 import bor.tools.simplellm.LLMServiceFactory;
-import bor.tools.simplellm.Model_Type;
+import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Reasoning_Effort;
 import bor.tools.simplellm.ResponseStream;
-import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.chat.ContentType;
 import bor.tools.simplellm.exceptions.LLMException;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Tests for LM Studio completion functionality.
@@ -180,7 +177,7 @@ class LMStudioCompletionTest extends LMStudioLLMServiceTestBase {
 	@DisplayName("Test completion error handling with null query")
 	void testCompletionWithNullQuery() {
 		// Given
-		String   query  = null;
+		//String   query  = null;
 		MapParam params = new MapParam();
 		params.maxTokens(1024);
 		// When & Then

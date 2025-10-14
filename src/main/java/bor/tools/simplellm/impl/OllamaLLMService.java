@@ -6,11 +6,8 @@ import static bor.tools.simplellm.Model_Type.LANGUAGE;
 
 import bor.tools.simplellm.LLMConfig;
 import bor.tools.simplellm.MapModels;
-import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model;
 import bor.tools.simplellm.ModelEmbedding;
-import bor.tools.simplellm.ModelEmbedding.Emb_Operation;
-import bor.tools.simplellm.exceptions.LLMException;
 
 /**
  * Implementation of the LLMService interface for Ollama's local Large Language
@@ -60,7 +57,8 @@ public class OllamaLLMService extends LMStudioLLMService {
 		map.add(qwen3_17b);
 		map.add(phi4_mini);
 		map.add(phi35_mini);
-		//map.add(snowflake);
+		
+		map.add(snowflake);
 		map.add(nomic);
 		map.add(gemma);
 
@@ -83,7 +81,7 @@ public class OllamaLLMService extends LMStudioLLMService {
 	 *               parameters
 	 */
 	public OllamaLLMService(LLMConfig config) {
-		super(config);
+		super(config==null?getDefaultLLMConfig():config);
 		// Ollama doesn't support responses API, so disable it
 		this.useResponsesAPI = false;
 	}

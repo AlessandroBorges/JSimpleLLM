@@ -112,8 +112,7 @@ public class ContextManager {
 	 * Cada método deve ajustar o outputChat com base no inputChat e na
 	 * estratégia de gerenciamento de contexto selecionada.
 	 */
-	private void applyHierarchical() {
-		// TODO Auto-generated method stub
+	protected void applyHierarchical() {
 
 	}
 
@@ -215,7 +214,7 @@ public class ContextManager {
 			int       currentTokens = countTokens(managed);
 			Message[] lastPair      = new Message[2]; // [0]=USER, [1]=
 			// forçar sumarização dos pares mais antigos, > 2
-			int countPairs = 0;
+			//int countPairs = 0;
 
 			while (!messagesStack.isEmpty() && currentTokens < maxContextWindow) {
 				Message m = messagesStack.pop();
@@ -226,7 +225,7 @@ public class ContextManager {
 				}
 				// Se temos um par completo, adicionamos
 				if (lastPair[0] != null && lastPair[1] != null) {
-					countPairs++;
+					//countPairs++;
 					int pairTokens = countTokens(lastPair[0]) + countTokens(lastPair[1]);
 					if (checkCtxSpace(pairTokens + currentTokens)) {
 						managed.addMessage(lastPair[0]);

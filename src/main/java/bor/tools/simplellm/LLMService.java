@@ -1,8 +1,10 @@
 package bor.tools.simplellm;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
-import bor.tools.simplellm.ModelEmbedding.Emb_Operation;
+import bor.tools.simplellm.ModelEmbedding.Embeddings_Op;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.chat.ContentWrapper;
 import bor.tools.simplellm.exceptions.LLMException;
@@ -27,8 +29,10 @@ import bor.tools.simplellm.exceptions.LLMException;
 public interface LLMService {
 
 	/**
-	 * Retrieves the list of available models from the LLM service, as provided to
-	 * LLMConfig.
+	 * Retrieves the list of registered models from the LLM service, as provided to
+	 * LLMConfig. 
+	 * 
+	 * <h2>This includes models that may not be currently installed or available.</h2>
 	 *
 	 * @return a list of model names available for use
 	 * 
@@ -37,12 +41,77 @@ public interface LLMService {
 	 * @see LLMConfig
 	 * @see Model
 	 */
-	List<Model> models() throws LLMException;
+	List<Model> getRegisteredModels() throws LLMException;
 	
-	default List<String> modelNames() throws LLMException {
-		return models().stream().map(m -> m.getName()).toList();
+	
+	/**
+	 * Check if the service is online by attempting to retrieve installed models.
+	 * @return
+	 */
+	default boolean isOnline() {
+		try {
+			var models = getInstalledModels();
+			if (models != null)
+				return true;
+		} catch (Exception e) {
+			return false;
+		}
+		return false;
 	}
+	
+	/**
+	 * Retrieves the list of models currently available in the service provider.
+	 * 
+	 * @return Map of model names to Model objects
+	 * @throws LLMException
+	 */
+	public MapModels getInstalledModels() throws LLMException;
+	
+	/**
+	 * Return names of Registered models
+	 * @return
+	 * 
+	 * @see #getInstalledModels()
+	 * @throws LLMException
+	 */
+	default List<String> getRegisterdModelNames() throws LLMException {
+		if(getRegisteredModels() == null)
+			return Collections.emptyList();
+		return getRegisteredModels().stream().map(m -> m.getName()).toList();
+	}
+	
+	/**
+	 * Return names of Installed models.
+	 * This are the models that are actually available in the service provider.
+	 * 
+	 * @return list of model names
+	 * 
+	 * @see #getInstalledModels()
+	 * @throws LLMException
+	 */
+	default List<String> getInstalledModelNames() throws LLMException {
+		if (getInstalledModels() == null)
+			return Collections.emptyList();
 
+		MapModels mapModels = getInstalledModels();
+		if (mapModels == null || mapModels.isEmpty())
+			return Collections.emptyList();
+
+		List<String> list = new java.util.ArrayList<>();
+		for (Map.Entry<String, Model> entry : mapModels.entrySet()) {
+
+			if (!list.contains(entry.getKey()))
+				list.add(entry.getKey());
+
+			Model m = entry.getValue();
+			if (m != null && m.getAlias() != null) {
+				String alias = m.getAlias();
+				if (!list.contains(alias))
+					list.add(alias);
+			}
+		}
+		return list;
+	}
 	
 	/**
 	 * Generates embeddings for the given text using the specified model.
@@ -63,7 +132,7 @@ public interface LLMService {
 		MapParam params = new MapParam();
 		params.put("model", model);		
 		if (model != null && model.getTypes().contains(Model_Type.EMBEDDING)) {
-			return embeddings(Emb_Operation.DEFAULT, texto, params);
+			return embeddings(Embeddings_Op.DEFAULT, texto, params);
 		} else {
 			throw new LLMException("Model " + (model != null ? model.getName() : "null") + " is not an EMBEDDING model");
 		}		
@@ -81,7 +150,7 @@ public interface LLMService {
 	 * 
 	 * @throws LLMException
 	 */
-	float[] embeddings(Emb_Operation op, String texto, MapParam params) throws LLMException;
+	float[] embeddings(Embeddings_Op op, String texto, MapParam params) throws LLMException;
 
 	/**
 	 * Performs a simple text completion using the specified system prompt and user
@@ -442,6 +511,84 @@ public interface LLMService {
 		LLMConfig config = getLLMConfig();
 		Model     model  = config.getModel(modelName);
 		return isModelType(model, type);
+	}
+
+	/**
+	 * Classifies the given markdown content into one of the provided categories
+	 * using the LLM service.
+	 * <p>
+	 * This method analyzes the content and determines the most appropriate
+	 * category based on the provided names and descriptions. It leverages the LLM's
+	 * understanding of context and semantics to make an informed classification.
+	 * </p>
+	 *
+	 * @param conteudoMarkdown      the markdown content to classify
+	 * @param allNames              array of category names to choose from
+	 * @param allNamesAndDescriptions array of category names with descriptions for better context
+	 * 
+	 * @return the name of the category that best fits the content
+	 * 
+	 * @throws LLMException if there's an error during classification
+	 */
+	default String classifyContent(String conteudoMarkdown, 
+	                               String[] allNames, 
+	                               String[] allNamesAndDescriptions) throws LLMException 
+	{
+		
+		String UNKNOWN = "Unknown";
+		
+		if (conteudoMarkdown != null && !conteudoMarkdown.isEmpty() && allNames != null && allNames.length > 0) {
+			
+			String system = "You are an expert content classifier. "
+					+ "Given a piece of content in markdown format, "
+					+ "classify it into one of the provided categories. "
+					+ "Respond with only the category name, no explanations nor descriptions."
+					+ "If none fit, respond with 'Unknown'.\n\n"
+					+ "Categories - Descriptions:\n";
+			
+			for (String nameDesc : allNamesAndDescriptions) {
+				system += "- " + nameDesc + "\n";
+			}
+			
+			String prompt = "Classify the following content:\n\n" + conteudoMarkdown + "\n\n"
+					      + "Choose one of the categories above.";
+			
+			try {
+				CompletionResponse response = completion(system, prompt, null);
+				if (response != null && response.getContent() != null) {
+					String classification = response.getContent().toString().trim();
+					// Validate classification against provided names
+					for (String name : allNames) {
+						if (name.equalsIgnoreCase(classification)) {
+							return name; // Return the matched category name
+						}
+					}
+					
+					// Try to find a name contained in the classification
+					// But must sort by length to match the longest name first
+					// to avoid partial matches
+					allNames = java.util.Arrays.stream(allNames)
+							.sorted((a, b) -> Integer.compare(b.length(), a.length()))
+							.toArray(String[]::new);
+					for (String name : allNames) {
+						if (classification.contains(name)) {
+							return name; // Return the matched category name
+						}
+					}
+					
+					if (UNKNOWN.equalsIgnoreCase(classification)) {
+						return UNKNOWN;
+					}
+				} else {
+					return UNKNOWN;
+				}				
+			} catch (LLMException e) {
+				e.printStackTrace();
+			}
+		}		
+		// If we reach here, return UNKNOWN
+		return UNKNOWN;						
+					
 	}
 	
 

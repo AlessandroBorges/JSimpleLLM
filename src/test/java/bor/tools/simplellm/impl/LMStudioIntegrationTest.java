@@ -16,7 +16,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import bor.tools.simplellm.CompletionResponse;
 import bor.tools.simplellm.LLMServiceFactory;
-import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model;
 import bor.tools.simplellm.chat.Chat;
@@ -59,7 +58,7 @@ class LMStudioIntegrationTest extends LMStudioLLMServiceTestBase {
 		System.out.println("\n=== Model Listing and Capabilities Test ===");
 
 		// Get available models
-		List<Model> models = llmService.models();
+		List<Model> models = llmService.getRegisteredModels();
 		assertNotNull(models, "Models list should not be null");
 		assertFalse(models.isEmpty(), "Should have at least one model");
 

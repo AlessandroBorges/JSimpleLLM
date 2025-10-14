@@ -3,8 +3,6 @@ package bor.tools.simplellm;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import lombok.Data;
-
 /**
  * A specialized map to manage parameters for LLM requests.
  * <p>

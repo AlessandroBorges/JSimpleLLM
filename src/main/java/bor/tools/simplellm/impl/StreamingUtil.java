@@ -2,7 +2,6 @@ package bor.tools.simplellm.impl;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -55,7 +54,7 @@ public class StreamingUtil {
 			StringBuilder      fullContent   = new StringBuilder();
 			StringBuilder      fullReasoning = new StringBuilder();
 			CompletionResponse finalResponse = new CompletionResponse();
-			StringBuilder      lineBuffer    = new StringBuilder();
+			//StringBuilder      lineBuffer    = new StringBuilder();
 
 			try (ResponseBody body = response.body()) {
 				if (body == null) {

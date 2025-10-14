@@ -38,6 +38,77 @@ import bor.tools.simplellm.impl.OpenAILLMService;
  * @see OpenAILLMService
  */
 public class LLMServiceFactory {
+	
+	/**
+	 * LLM Service providers
+	 */
+	public enum SERVICE_PROVIDER{
+		OPENAI,
+		ANTHROPIC,
+		LM_STUDIO,		
+		OLLAMA,
+		TOGETHER;
+		
+		public static SERVICE_PROVIDER fromString(String provider) {
+			if (provider == null) {
+				return null;
+			}
+			switch (provider.trim().toUpperCase()) {
+			case "OPENAI":
+				return OPENAI;
+			case "ANTHROPIC":
+				return ANTHROPIC;
+			case "LM_STUDIO":
+			case "LMSTUDIO":
+				return LM_STUDIO;
+			case "OLLAMA":
+				return OLLAMA;
+			case "TOGETHER":
+				return TOGETHER;
+			default:
+				throw new IllegalArgumentException("Unsupported LLM service provider: " + provider);
+			}
+		}
+	}//enum
+	
+	/**
+	 * Create an instance of LLM service based on the specified provider and configuration.
+	 * @param provider  - the LLM service provider to use
+	 * @param config - (optional) the LLM configuration containing API settings, model definitions, API authentication details, and service endpoints
+     *
+	 * @return a new {@link LLMService} instance configured for the specified provider
+	 */
+	public static LLMService createLLMService(SERVICE_PROVIDER provider, LLMConfig config) {
+		if (provider == null) {
+			throw new IllegalArgumentException("Provider must not be null");
+		}
+		
+		switch (provider) {
+		case OPENAI:
+			return createOpenAI(config);
+		case OLLAMA:
+			if (config == null) {
+				return createOllama();
+			} else {
+				return createOllama(config);
+			}
+		case LM_STUDIO:
+			if (config == null) {
+				return createLMStudio();
+			} else {
+				return createLMStudio(config);
+			}
+		case ANTHROPIC:
+			return createOpenAI(config); // Anthropic API is OpenAI-compatible
+			//throw new UnsupportedOperationException("Anthropic LLM service not yet implemented");
+		case TOGETHER:
+			return createOpenAI(config); // Together API is OpenAI-compatible
+			//throw new UnsupportedOperationException("Together LLM service not yet implemented");
+		default:
+			return createOpenAI(config); // Default to OpenAI-compatible service
+			//throw new IllegalArgumentException("Unsupported LLM service provider: " + provider);
+		}
+	}
 
 	/**
 	 * Creates an instance of OpenAI-compatible LLM service.

@@ -65,7 +65,7 @@ class OpenAIConfigTest extends OpenAILLMServiceTestBase {
 	void testModelListing()
 	            throws LLMException {
 		// When
-		List<Model> models = llmService.models();
+		List<Model> models = llmService.getRegisteredModels();
 
 		// Then
 		assertNotNull(models, "Models list should not be null");
@@ -93,7 +93,7 @@ class OpenAIConfigTest extends OpenAILLMServiceTestBase {
 	void testModelCapabilities()
 	            throws LLMException {
 		// Given
-		List<Model> models = llmService.models();
+		List<Model> models = llmService.getRegisteredModels();
 
 		// When
 		Model gpt4Mini = models.stream().filter(model -> model.getName().equals("gpt-4o-mini")).findFirst().orElse(null);
@@ -148,7 +148,7 @@ class OpenAIConfigTest extends OpenAILLMServiceTestBase {
 	void testModelContextSizes()
 	            throws LLMException {
 		// Given
-		List<Model> models = llmService.models();
+		List<Model> models = llmService.getRegisteredModels();
 
 		// Then
 		for (Model model : models) {
@@ -170,7 +170,7 @@ class OpenAIConfigTest extends OpenAILLMServiceTestBase {
 	void testEmbeddingModelIdentification()
 	            throws LLMException {
 		// Given
-		List<Model> models = llmService.models();
+		List<Model> models = llmService.getRegisteredModels();
 
 		// When
 		Model embeddingModel =

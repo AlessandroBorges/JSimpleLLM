@@ -23,7 +23,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 public class Utils {
 
 	private static final DecimalFormat decimalFormat  = new DecimalFormat("0.0########E0");
-	private static final DecimalFormat decimalFormatD = new DecimalFormat("0.0#####################E0");
+	//private static final DecimalFormat decimalFormatD = new DecimalFormat("0.0#####################E0");
 
 	/**
 	 * Evitar criação acidental

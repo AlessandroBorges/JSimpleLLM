@@ -31,6 +31,7 @@ class StreamingUtilTest {
 
 	private StreamingUtil      streamingUtil;
 	private OpenAIJsonMapper   jsonMapper;
+	@SuppressWarnings("unused")
 	private TestResponseStream testStream;
 
 	@BeforeEach

@@ -8,9 +8,8 @@ import static bor.tools.simplellm.Model_Type.REASONING;
 import static bor.tools.simplellm.Model_Type.REASONING_PROMPT;
 import static bor.tools.simplellm.Model_Type.TOOLS;
 import static bor.tools.simplellm.Model_Type.VISION;
-import static bor.tools.simplellm.Reasoning_Effort.*;
+import static bor.tools.simplellm.Reasoning_Effort.none;
 
-import java.util.List;
 import java.util.Map;
 
 import bor.tools.simplellm.CompletionResponse;
@@ -19,10 +18,9 @@ import bor.tools.simplellm.MapModels;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model;
 import bor.tools.simplellm.ModelEmbedding;
+import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.Reasoning_Effort;
 import bor.tools.simplellm.ResponseStream;
-import bor.tools.simplellm.ModelEmbedding.Emb_Operation;
-import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.chat.Message;
 import bor.tools.simplellm.chat.MessageRole;
@@ -229,8 +227,8 @@ public class LMStudioLLMService extends OpenAILLMService {
 	 * @param config the LLM configuration containing LM Studio API settings and
 	 *               parameters
 	 */
-	public LMStudioLLMService(LLMConfig config) {
-		super(config);
+	public LMStudioLLMService(LLMConfig config) {		
+		super(config==null?getDefaultLLMConfig():config);
 		// LM Studio doesn't support responses API, so disable it
 		this.useResponsesAPI = false;
 	}
@@ -544,12 +542,9 @@ public class LMStudioLLMService extends OpenAILLMService {
 	 */
 	@Override
 	public CompletionResponse completion(String prompt, String query, MapParam params) throws LLMException {
-         if ((query == null || query.trim().isEmpty()) && (prompt == null || prompt.trim().isEmpty())) {
-        	 			throw new LLMException("Either prompt or query must be provided");
-         }
-		
-		prompt = prompt == null ? DEFAULT_PROMPT : prompt.trim();
-		query = query == null ? "" : query.trim();		
+        		
+		prompt = prompt == null || prompt.isEmpty() ? DEFAULT_PROMPT : prompt.trim();
+		query = query == null || query.isEmpty() ? "Introduce yourself." : query.trim();		
 		params = fixParams(params);
 				
 		Model model = resolveModel(params);

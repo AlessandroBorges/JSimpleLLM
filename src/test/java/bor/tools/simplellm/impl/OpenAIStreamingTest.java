@@ -239,6 +239,7 @@ class OpenAIStreamingTest extends OpenAILLMServiceTestBase {
 
 		public Throwable getError() { return error.get(); }
 
+		@SuppressWarnings("unused")
 		public boolean waitForCompletion(long timeout, TimeUnit unit) throws InterruptedException {
 			return completionLatch.await(timeout, unit);
 		}

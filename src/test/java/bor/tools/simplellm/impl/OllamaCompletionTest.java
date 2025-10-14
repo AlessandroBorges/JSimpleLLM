@@ -18,7 +18,7 @@ import bor.tools.simplellm.CompletionResponse;
 import bor.tools.simplellm.LLMServiceFactory;
 import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.MapParam;
-import bor.tools.simplellm.ModelEmbedding.Emb_Operation;
+import bor.tools.simplellm.ModelEmbedding.Embeddings_Op;
 import bor.tools.simplellm.chat.ContentType;
 import bor.tools.simplellm.exceptions.LLMException;
 
@@ -251,7 +251,7 @@ class OllamaCompletionTest extends OllamaLLMServiceTestBase {
 		List<String> embeddingModels = new ArrayList<>();
 
 		// When
-		for (String modelName : service.modelNames()) {
+		for (String modelName : service.getRegisterdModelNames()) {
 			if (service.isModelType(modelName, Model_Type.EMBEDDING)) {
 				embeddingModels.add(modelName);
 			}
@@ -268,7 +268,7 @@ class OllamaCompletionTest extends OllamaLLMServiceTestBase {
 		// Given
 		OllamaLLMService service = new OllamaLLMService();
 		String textToEmbed = "O Brasil foi campeão da Copa do Mundo de 2002.";
-		List<String> embeddingModels = service.modelNames().stream()
+		List<String> embeddingModels = service.getRegisterdModelNames().stream()
 				.filter(model -> service.isModelType(model, Model_Type.EMBEDDING)).collect(Collectors.toList());
 
 		assertTrue(embeddingModels.size() > 0, "No embedding models found to test.");
@@ -279,7 +279,7 @@ class OllamaCompletionTest extends OllamaLLMServiceTestBase {
 				MapParam params = new MapParam();
 				params.put("model", modelName);
 
-				float[] response = service.embeddings(Emb_Operation.DOCUMENT, textToEmbed, params);
+				float[] response = service.embeddings(Embeddings_Op.DOCUMENT, textToEmbed, params);
 				assertNotNull(response,
 				              "Embedding response should not be null for model: "
 				                          + modelName);
@@ -304,7 +304,7 @@ class OllamaCompletionTest extends OllamaLLMServiceTestBase {
 	void testIdentifyModelsWithDimensionCapability() throws LLMException {
 		// Given
 		OllamaLLMService service = new OllamaLLMService();
-		List<String> embeddingModels = service.modelNames().stream()
+		List<String> embeddingModels = service.getRegisterdModelNames().stream()
 				.filter(model -> service.isModelType(model, Model_Type.EMBEDDING)).collect(Collectors.toList());
 
 		// When & Then
@@ -317,7 +317,7 @@ class OllamaCompletionTest extends OllamaLLMServiceTestBase {
 			params.put("dimensions", 128); // A common dimension to test with
 
 			try {
-				float[] response = service.embeddings(Emb_Operation.DOCUMENT,
+				float[] response = service.embeddings(Embeddings_Op.DOCUMENT,
 				                                      "Test sentence for dimension check.",
 				                                      params);
 				
@@ -339,7 +339,7 @@ class OllamaCompletionTest extends OllamaLLMServiceTestBase {
 		OllamaLLMService service = new OllamaLLMService();
 		String textToEmbed = "This is a test sentence for reduced embeddings.";
 		int vecSize = 64;
-		List<String> embeddingModels = service.modelNames().stream()
+		List<String> embeddingModels = service.getRegisterdModelNames().stream()
 				.filter(model -> service.isModelType(model, Model_Type.EMBEDDING_DIMENSION)).collect(Collectors.toList());
 
 		System.out.println("Creating reduced dimension embeddings (size=" + vecSize + "):");
@@ -351,7 +351,7 @@ class OllamaCompletionTest extends OllamaLLMServiceTestBase {
 			params.put("dimensions", vecSize);
 
 			try {
-				float[] response = service.embeddings(Emb_Operation.DOCUMENT, textToEmbed, params);
+				float[] response = service.embeddings(Embeddings_Op.DOCUMENT, textToEmbed, params);
 				assertNotNull(response, "Response should not be null");
 				assertNotNull(response.length, "Vector should not be null");
 				assertEquals(vecSize, response.length,

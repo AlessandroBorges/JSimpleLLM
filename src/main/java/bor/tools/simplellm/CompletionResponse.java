@@ -34,6 +34,8 @@ import lombok.Data;
 
 public class CompletionResponse {
 
+	private static final String EMPYT_TEXT = "<empyt text>";
+
 	private static final String REASONING_END = "</reasoning>";
 
 	private static final String REASONING = "<reasoning>";
@@ -171,14 +173,14 @@ public class CompletionResponse {
 	 * returns null.
 	 * </p>
 	 * 
-	 * @return the text content of the response, or null if not applicable
+	 * @return the text content of the response, or EMPYT_TEXT if not applicable
 	 */
 	@JsonIgnore
 	public String getText() {
 		if (this.response != null && this.response.getType() == ContentType.TEXT) {			
 			return response.getText();
 		}
-		return null;
+		return EMPYT_TEXT;
 	}
 	
 	/**

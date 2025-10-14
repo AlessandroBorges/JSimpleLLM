@@ -9,7 +9,6 @@ import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.knuddels.jtokkit.api.ModelType;
 
 import bor.tools.simplellm.CompletionResponse;
 import bor.tools.simplellm.MapParam;

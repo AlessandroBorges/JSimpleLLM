@@ -9,7 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import bor.tools.simplellm.MapParam;
-import bor.tools.simplellm.ModelEmbedding.Emb_Operation;
+import bor.tools.simplellm.ModelEmbedding.Embeddings_Op;
 import bor.tools.simplellm.exceptions.LLMException;
 
 /**
@@ -26,7 +26,7 @@ class OpenAIEmbeddingsTest extends OpenAILLMServiceTestBase {
         MapParam param = new MapParam();
         param.model(model);
 		// When
-		float[] embeddings = llmService.embeddings(Emb_Operation.DOCUMENT,text, param);
+		float[] embeddings = llmService.embeddings(Embeddings_Op.DOCUMENT,text, param);
 
 		// Then
 		assertNotNull(embeddings, "Embeddings should not be null");
@@ -63,7 +63,7 @@ class OpenAIEmbeddingsTest extends OpenAILLMServiceTestBase {
 		String text = "This is another test sentence.";
         MapParam param = new MapParam();
 		// When - using null model should use default
-		float[] embeddings = llmService.embeddings(Emb_Operation.DOCUMENT,text,param);
+		float[] embeddings = llmService.embeddings(Embeddings_Op.DOCUMENT,text,param);
 
 		// Then
 		assertNotNull(embeddings, "Embeddings should not be null");
@@ -86,7 +86,7 @@ class OpenAIEmbeddingsTest extends OpenAILLMServiceTestBase {
 		param.model(model);
 		param.dimension(customDimensions);
 		// When
-		float[] embeddings = llmService.embeddings(Emb_Operation.DOCUMENT,text,param);
+		float[] embeddings = llmService.embeddings(Embeddings_Op.DOCUMENT,text,param);
 
 		// Then
 		assertNotNull(embeddings, "Embeddings should not be null");
@@ -108,9 +108,9 @@ class OpenAIEmbeddingsTest extends OpenAILLMServiceTestBase {
 		param.model("text-embedding-3-small");
 		param.dimension(512);
 		// When
-		float[] embeddings1 = llmService.embeddings(Emb_Operation.DOCUMENT,text1,param);
-		float[] embeddings2 = llmService.embeddings(Emb_Operation.DOCUMENT,text2,param);
-		float[] embeddings3 = llmService.embeddings(Emb_Operation.DOCUMENT,text3,param);
+		float[] embeddings1 = llmService.embeddings(Embeddings_Op.DOCUMENT,text1,param);
+		float[] embeddings2 = llmService.embeddings(Embeddings_Op.DOCUMENT,text2,param);
+		float[] embeddings3 = llmService.embeddings(Embeddings_Op.DOCUMENT,text3,param);
 
 		// Then
 		double similarity12 = cosineSimilarity(embeddings1, embeddings2);
@@ -143,9 +143,9 @@ class OpenAIEmbeddingsTest extends OpenAILLMServiceTestBase {
 		MapParam param = new MapParam();
 		param.model("text-embedding-3-small");
 		// When
-		float[] shortEmbeddings  = llmService.embeddings(Emb_Operation.DOCUMENT,shortText, param);
-		float[] mediumEmbeddings = llmService.embeddings(Emb_Operation.DOCUMENT, mediumText, param);
-		float[] longEmbeddings   = llmService.embeddings(Emb_Operation.DOCUMENT,longText, param);
+		float[] shortEmbeddings  = llmService.embeddings(Embeddings_Op.DOCUMENT,shortText, param);
+		float[] mediumEmbeddings = llmService.embeddings(Embeddings_Op.DOCUMENT, mediumText, param);
+		float[] longEmbeddings   = llmService.embeddings(Embeddings_Op.DOCUMENT,longText, param);
 
 		// Then
 		assertEquals(shortEmbeddings.length, mediumEmbeddings.length, "All embeddings should have same dimensions");
@@ -165,7 +165,7 @@ class OpenAIEmbeddingsTest extends OpenAILLMServiceTestBase {
 		param.model("text-embedding-3-small");
 		// When & Then
 		assertThrows(LLMException.class,
-		             () -> { llmService.embeddings(Emb_Operation.DOCUMENT,emptyText, param); },
+		             () -> { llmService.embeddings(Embeddings_Op.DOCUMENT,emptyText, param); },
 		             "Should throw exception for empty text");
 	}
 
@@ -176,7 +176,7 @@ class OpenAIEmbeddingsTest extends OpenAILLMServiceTestBase {
 		param.model("text-embedding-3-small");
 		// When & Then
 		assertThrows(LLMException.class,
-		             () -> { llmService.embeddings(Emb_Operation.DOCUMENT,null, param); },
+		             () -> { llmService.embeddings(Embeddings_Op.DOCUMENT,null, param); },
 		             "Should throw exception for null text");
 	}
 

@@ -77,9 +77,8 @@ public class ChatManager {
 	 *                        chats.
 	 */
 	public ChatManager(ScheduledExecutorService scheduler,
-	                   ChatPersistence chatPersistence,
-	                   Integer contextLength,
-	                   Integer minContext) {
+	                   ChatPersistence chatPersistence) 
+	{
 		this.chatPersistence = chatPersistence;
 		this.scheduler = scheduler;
 

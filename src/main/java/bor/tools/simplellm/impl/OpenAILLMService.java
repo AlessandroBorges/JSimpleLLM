@@ -34,7 +34,7 @@ import bor.tools.simplellm.MapModels;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model;
 import bor.tools.simplellm.ModelEmbedding;
-import bor.tools.simplellm.ModelEmbedding.Emb_Operation;
+import bor.tools.simplellm.ModelEmbedding.Embeddings_Op;
 import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.ResponseStream;
 import bor.tools.simplellm.chat.Chat;
@@ -86,7 +86,9 @@ public class OpenAILLMService implements LLMService {
 	Logger logger = LoggerFactory.getLogger(OpenAILLMService.class.getName());
 
 	protected static final String DEFAULT_PROMPT =
-	            "You are a helpful assistant who responds in the same language used as input.";
+	            "You are a helpful assistant that follow the instructions carefully. "
+	                        + "If you don't know the answer, just say that you don't know. "
+	                        + "Don't try to make up an answer.";
 
 	private static final String DEFAULT_MODEL = "gpt-4.1-mini";
 
@@ -207,6 +209,8 @@ public class OpenAILLMService implements LLMService {
 	 * @param config the LLM configuration containing API settings and parameters
 	 */
 	public OpenAILLMService(LLMConfig config) {
+		if(config==null)
+			config = getDefaultLLMConfig();
 		this.config = config;
 		this.jsonMapper = new OpenAIJsonMapper();
 		this.streamingUtil = new StreamingUtil(this.jsonMapper);
@@ -313,7 +317,11 @@ public class OpenAILLMService implements LLMService {
 	}
 
 	/**
-	 * Retrieves the list of models currently installed and available in the server
+	 * Retrieves the list of models currently installed and available in the server.<br>
+	 * 
+	 * It performs a HTPP GET to /models endpoint.
+	 * 
+	 * 
 	 * @return Map of model names to Model objects
 	 * @throws LLMException
 	 */
@@ -439,7 +447,7 @@ public class OpenAILLMService implements LLMService {
 	 * </p>
 	 */
 	@Override
-	public List<Model> models() throws LLMException {
+	public List<Model> getRegisteredModels() throws LLMException {
 		return config.getModelMap().values().stream().toList();
 	}
 
@@ -451,7 +459,7 @@ public class OpenAILLMService implements LLMService {
 	 * </p>
 	 */
 	@Override
-	public float[] embeddings(Emb_Operation op, String texto, MapParam params) throws LLMException {
+	public float[] embeddings(Embeddings_Op op, String texto, MapParam params) throws LLMException {
 
 		if (texto == null || texto.trim().isEmpty()) {
 			throw new LLMException("Text cannot be null or empty");
