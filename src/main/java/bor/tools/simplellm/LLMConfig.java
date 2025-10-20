@@ -100,12 +100,33 @@ public class LLMConfig {
 	 * </p>
 	 */
 	@Builder.Default
-	private MapModels modelMap = new MapModels(); // class model
+	private MapModels registeredModelMap = new MapModels(); // class model
 
 	/**
-	 * Retrieves a model by its name or alias.
+	 * The default model name to use when no specific model is requested.
 	 * <p>
-	 * This method searches the {@link #modelMap} for a model matching the given
+	 * This should correspond to one of the keys in the {@link #registeredModelMap}.
+	 * If not set, the application may choose a default behavior (e.g., throw an
+	 * error or use a predefined fallback model).
+	 * </p>
+	 */
+	private String defaultModelName;
+	
+	/**
+	 * The default embedding model name to use for generating embeddings.
+	 * <p>
+	 * This should correspond to one of the keys in the {@link #registeredModelMap}
+	 * that is capable of generating embeddings. If not set, the application may
+	 * choose a default behavior (e.g., throw an error or use a predefined fallback
+	 * embedding model).
+	 * </p>
+	 */
+	private String defaultEmbeddingModelName;
+	
+	/**
+	 * Retrieves a registered model by its name or alias.
+	 * <p>
+	 * This method searches the {@link #registeredModelMap} for a model matching the given
 	 * name or alias.
 	 * </p>
 	 * 
@@ -113,7 +134,7 @@ public class LLMConfig {
 	 * 
 	 * @return the corresponding {@link Model} if found, otherwise null
 	 */	public Model getModel(String string) {
-		return modelMap.getModel(string);
+		return registeredModelMap.getModel(string);
 	}
 	 
 	 /**
@@ -124,10 +145,10 @@ public class LLMConfig {
 	public MapModels addModels(Model... models) {
 		if (models != null) {
 			for (var m : models) {
-				this.modelMap.put(m.getName(), m);
+				this.registeredModelMap.put(m.getName(), m);
 			}
 		}
-		return this.modelMap;
+		return this.registeredModelMap;
 	} 
 	
 	/**
@@ -139,17 +160,17 @@ public class LLMConfig {
 		    if(models instanceof Map) {
 		        for (var m : ((Map<?, ?>) models).values()) {
 		            if (m instanceof Model) {
-		                this.modelMap.put(((Model) m).getName(), (Model) m);
+		                this.registeredModelMap.put(((Model) m).getName(), (Model) m);
 		            }
 		        }
-		        return this.modelMap;
+		        return this.registeredModelMap;
 		    } else 
 			if (models != null) {
 				for (var m : models) {
-					this.modelMap.put(m.getName(), m);
+					this.registeredModelMap.put(m.getName(), m);
 				}
 			}
-			return this.modelMap;
+			return this.registeredModelMap;
 		}
 }
 // LLMConfig

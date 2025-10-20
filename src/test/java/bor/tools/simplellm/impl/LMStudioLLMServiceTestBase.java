@@ -38,7 +38,7 @@ public abstract class LMStudioLLMServiceTestBase {
         LLMConfig customConfig = LLMConfig.builder()
                 .baseUrl(baseUrl)
                 .apiToken(apiKey)
-                .modelMap(LMStudioLLMService.getDefaultLLMConfig().getModelMap())
+                .registeredModelMap(LMStudioLLMService.getDefaultLLMConfig().getRegisteredModelMap())
                 .build();
         
         return new LMStudioLLMService(customConfig);
@@ -64,7 +64,7 @@ public abstract class LMStudioLLMServiceTestBase {
      * Get the first available model from the configuration.
      */
     protected String getFirstAvailableModel() {
-        return config.getModelMap().keySet().iterator().next();
+        return config.getRegisteredModelMap().keySet().iterator().next();
     }
     
     /**

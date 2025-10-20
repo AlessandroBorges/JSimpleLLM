@@ -184,12 +184,12 @@ class OllamaCompletionTest extends OllamaLLMServiceTestBase {
 		assertEquals("OLLAMA_API_KEY", ollamaConfig.getApiTokenEnvironment(), "Should use OLLAMA_API_KEY env var");
 
 		// Should have some models configured
-		assertFalse(ollamaConfig.getModelMap().isEmpty(), "Should have default models configured");
+		assertFalse(ollamaConfig.getRegisteredModelMap().isEmpty(), "Should have default models configured");
 
 		System.out.println("Ollama Base URL: "
 		            + ollamaConfig.getBaseUrl());
 		System.out.println("Available Ollama models: "
-		            + ollamaConfig.getModelMap().keySet());
+		            + ollamaConfig.getRegisteredModelMap().keySet());
 	}
 
 	@Test
@@ -251,7 +251,7 @@ class OllamaCompletionTest extends OllamaLLMServiceTestBase {
 		List<String> embeddingModels = new ArrayList<>();
 
 		// When
-		for (String modelName : service.getRegisterdModelNames()) {
+		for (String modelName : service.getRegisteredModelNames()) {
 			if (service.isModelType(modelName, Model_Type.EMBEDDING)) {
 				embeddingModels.add(modelName);
 			}
@@ -268,7 +268,7 @@ class OllamaCompletionTest extends OllamaLLMServiceTestBase {
 		// Given
 		OllamaLLMService service = new OllamaLLMService();
 		String textToEmbed = "O Brasil foi campeão da Copa do Mundo de 2002.";
-		List<String> embeddingModels = service.getRegisterdModelNames().stream()
+		List<String> embeddingModels = service.getRegisteredModelNames().stream()
 				.filter(model -> service.isModelType(model, Model_Type.EMBEDDING)).collect(Collectors.toList());
 
 		assertTrue(embeddingModels.size() > 0, "No embedding models found to test.");
@@ -304,7 +304,7 @@ class OllamaCompletionTest extends OllamaLLMServiceTestBase {
 	void testIdentifyModelsWithDimensionCapability() throws LLMException {
 		// Given
 		OllamaLLMService service = new OllamaLLMService();
-		List<String> embeddingModels = service.getRegisterdModelNames().stream()
+		List<String> embeddingModels = service.getRegisteredModelNames().stream()
 				.filter(model -> service.isModelType(model, Model_Type.EMBEDDING)).collect(Collectors.toList());
 
 		// When & Then
@@ -339,7 +339,7 @@ class OllamaCompletionTest extends OllamaLLMServiceTestBase {
 		OllamaLLMService service = new OllamaLLMService();
 		String textToEmbed = "This is a test sentence for reduced embeddings.";
 		int vecSize = 64;
-		List<String> embeddingModels = service.getRegisterdModelNames().stream()
+		List<String> embeddingModels = service.getRegisteredModelNames().stream()
 				.filter(model -> service.isModelType(model, Model_Type.EMBEDDING_DIMENSION)).collect(Collectors.toList());
 
 		System.out.println("Creating reduced dimension embeddings (size=" + vecSize + "):");

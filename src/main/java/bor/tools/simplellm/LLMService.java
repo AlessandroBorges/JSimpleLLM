@@ -29,6 +29,23 @@ import bor.tools.simplellm.exceptions.LLMException;
 public interface LLMService {
 
 	/**
+	 * Adiciona um novo modelo à lista de modelos registrados.
+	 * @param model - modelo a ser adicionado
+	 * @return true se o modelo foi adicionado, false se já existia
+	 * @throws LLMException
+	 */
+	default boolean registerModel(Model model) throws LLMException {
+		if (model == null || model.getName() == null || model.getName().isEmpty()) {
+			throw new LLMException("Model or model name cannot be null or empty");
+		}
+		if(getLLMConfig()==null) {
+			throw new LLMException("Model " + model.getName() + " is already registered");
+		}
+		boolean exists = getLLMConfig().getRegisteredModelMap().containsKey(model.getName());
+		getLLMConfig().addModels(model);
+		return !exists;
+	}	
+	/**
 	 * Retrieves the list of registered models from the LLM service, as provided to
 	 * LLMConfig. 
 	 * 
@@ -41,8 +58,13 @@ public interface LLMService {
 	 * @see LLMConfig
 	 * @see Model
 	 */
-	List<Model> getRegisteredModels() throws LLMException;
+	MapModels getRegisteredModels() throws LLMException;
 	
+	/**
+	 * return the ServiceProvider type
+	 * @return
+	 */
+	SERVICE_PROVIDER getServiceProvider();
 	
 	/**
 	 * Check if the service is online by attempting to retrieve installed models.
@@ -74,10 +96,23 @@ public interface LLMService {
 	 * @see #getInstalledModels()
 	 * @throws LLMException
 	 */
-	default List<String> getRegisterdModelNames() throws LLMException {
-		if(getRegisteredModels() == null)
+	default List<String> getRegisteredModelNames() throws LLMException {
+		MapModels mapModels = getRegisteredModels();
+		if (mapModels == null)
 			return Collections.emptyList();
-		return getRegisteredModels().stream().map(m -> m.getName()).toList();
+		List<String> list = new java.util.ArrayList<>();
+		list.addAll(mapModels.keySet());
+
+		// Add aliases
+		for (Map.Entry<String, Model> entry : mapModels.entrySet()) {
+			Model m = entry.getValue();
+			if (m != null && m.getAlias() != null) {
+				String alias = m.getAlias();
+				if (!list.contains(alias))
+					list.add(alias);
+			}
+		}
+		return list;
 	}
 	
 	/**
@@ -90,19 +125,16 @@ public interface LLMService {
 	 * @throws LLMException
 	 */
 	default List<String> getInstalledModelNames() throws LLMException {
-		if (getInstalledModels() == null)
-			return Collections.emptyList();
-
 		MapModels mapModels = getInstalledModels();
 		if (mapModels == null || mapModels.isEmpty())
 			return Collections.emptyList();
 
 		List<String> list = new java.util.ArrayList<>();
-		for (Map.Entry<String, Model> entry : mapModels.entrySet()) {
-
-			if (!list.contains(entry.getKey()))
-				list.add(entry.getKey());
-
+		// add model names
+		list.addAll(mapModels.keySet());
+		
+		// Add aliases
+		for (Map.Entry<String, Model> entry : mapModels.entrySet()) {			
 			Model m = entry.getValue();
 			if (m != null && m.getAlias() != null) {
 				String alias = m.getAlias();
@@ -403,9 +435,28 @@ public interface LLMService {
 	 */
 	LLMConfig getLLMConfig();
 
-	
-
-	String getDefaultModelName();
+	/**
+	 * Set the default model name to be used when no specific model is provided.
+	 * @param modelName
+	 */
+    default void setDefaultModelName(String modelName) {
+    	if(getLLMConfig()!=null) {
+			getLLMConfig().setDefaultModelName(modelName);
+		} else {
+		 throw new IllegalStateException("LLMConfig is not set, cannot set default model name");
+		}
+    }
+    
+    /**
+     * Returns the default model name to be used when no specific model is provided.
+     * @return
+     */
+	default String getDefaultModelName() {
+		if(getLLMConfig()!=null) {
+			return getLLMConfig().getDefaultModelName();
+		}
+		return null;
+	}
 
 	/**
 	 * Finds the model name from the provided parameters.
@@ -449,7 +500,7 @@ public interface LLMService {
 	 * @see LLMConfig
 	 */
 	default Model findModel(Model_Type... types) {
-		MapModels models   = getLLMConfig().getModelMap();
+		MapModels models   = getLLMConfig().getRegisteredModelMap();
 		Model     selected = null;
 		int       maxNota  = 0;
 		for (var model : models.values()) {
@@ -511,6 +562,37 @@ public interface LLMService {
 		LLMConfig config = getLLMConfig();
 		Model     model  = config.getModel(modelName);
 		return isModelType(model, type);
+	}
+	
+	/**
+	 * Checks if the specified model is currently online and available in the service.
+	 * @param modelName - name of the model to check
+	 * @return
+	 */
+	default boolean isModelOnline(String modelName) {
+		try {
+			MapModels models = getInstalledModels();
+			if(models!=null) {
+				return models.containsName(modelName);
+			}
+		} catch (LLMException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+	
+	/**
+	 * Checks if the specified model is currently online and available in the service.
+	 * @param model
+	 * @return
+	 */
+	default boolean isModelOnline(Model model) {
+		if(model==null) return false;
+		boolean res = isModelOnline(model.getName());
+		if(!res && model.getAlias()!=null) {
+			res = isModelOnline(model.getAlias());
+		}
+		return res;		
 	}
 
 	/**

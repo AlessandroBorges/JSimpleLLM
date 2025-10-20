@@ -46,7 +46,7 @@ class OllamaIntegrationTest extends OllamaLLMServiceTestBase {
 		System.out.println("2. Base URL: "
 		            + config.getBaseUrl());
 		System.out.println("3. Available models: "
-		            + config.getModelMap().keySet());
+		            + config.getRegisteredModelMap().keySet());
 		System.out.println("=== Connectivity test completed ===\n");
 	}
 
@@ -57,7 +57,7 @@ class OllamaIntegrationTest extends OllamaLLMServiceTestBase {
 		System.out.println("\n=== Model Listing and Capabilities Test ===");
 
 		// Get available models
-		List<Model> models = llmService.getRegisteredModels();
+		List<Model> models = llmService.getRegisteredModels().getModels();
 		assertNotNull(models, "Models list should not be null");
 		assertFalse(models.isEmpty(), "Should have at least one model");
 

@@ -8,6 +8,7 @@ import bor.tools.simplellm.LLMConfig;
 import bor.tools.simplellm.MapModels;
 import bor.tools.simplellm.Model;
 import bor.tools.simplellm.ModelEmbedding;
+import bor.tools.simplellm.SERVICE_PROVIDER;
 
 /**
  * Implementation of the LLMService interface for Ollama's local Large Language
@@ -66,7 +67,7 @@ public class OllamaLLMService extends LMStudioLLMService {
 		            .apiTokenEnvironment("OLLAMA_API_KEY")
 		            .apiToken("ollama") // Default API key for Ollama
 		            .baseUrl("http://localhost:11434/v1/")
-		            .modelMap(map)
+		            .registeredModelMap(map)
 		            .build();
 	}
 	
@@ -113,7 +114,7 @@ public class OllamaLLMService extends LMStudioLLMService {
 	 */
 	@Override
 	public String getDefaultModelName() {
-		MapModels models = getLLMConfig().getModelMap();
+		MapModels models = getLLMConfig().getRegisteredModelMap();
 		var       name   = models.getModel(DEFAULT_MODEL);
 		if (name == null) {
 			// If default model not found, fallback to first available model
@@ -179,6 +180,9 @@ public class OllamaLLMService extends LMStudioLLMService {
 		// Ollama doesn't use responses API, so return original params
 		return params;
 	}
-
+	@Override
+	public SERVICE_PROVIDER getServiceProvider() {		
+		return SERVICE_PROVIDER.OLLAMA;
+	}
 
 }

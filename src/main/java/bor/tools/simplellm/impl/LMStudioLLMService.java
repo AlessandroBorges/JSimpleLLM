@@ -21,6 +21,7 @@ import bor.tools.simplellm.ModelEmbedding;
 import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.Reasoning_Effort;
 import bor.tools.simplellm.ResponseStream;
+import bor.tools.simplellm.SERVICE_PROVIDER;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.chat.Message;
 import bor.tools.simplellm.chat.MessageRole;
@@ -190,7 +191,7 @@ public class LMStudioLLMService extends OpenAILLMService {
 		            .apiTokenEnvironment("LMSTUDIO_API_KEY")
 		            .apiToken("lm-studio") // Default API key for LM Studio
 		            .baseUrl("http://localhost:1234/v1/")
-		            .modelMap(defaultModelMap)
+		            .registeredModelMap (defaultModelMap)
 		            .build();
 	}
 
@@ -490,13 +491,23 @@ public class LMStudioLLMService extends OpenAILLMService {
 		if (params.getModel() == null) {
 			params.model(getDefaultModelName());
 		}
+		
+		Model model = resolveModel(params);
+		if(model==null) {
+			throw new LLMException("No model specified and no default model available");
+		}
+		if(isModelOnline(model)==false) {
+			throw new LLMException("LM Studio service only supports installed models. "
+						+ "Model " + model.getName() + " is offline.");
+		}
+		
 		/*
 		if(params.get("seed") == null) {
 			params.put("seed", 42); // set a default seed for reproducibility
 		}
 		*/
 		// Ensure max tokens is set
-		if (params.getMaxTokens() == null) {
+		if (params.getMaxTokens() == null) {			
 			params.maxTokens(2048); // LM Studio models often support large contexts
 		}
 		
@@ -597,5 +608,10 @@ public class LMStudioLLMService extends OpenAILLMService {
 			throw new LLMException("Unexpected error during chat completion: "
 			            + e.getMessage(), e);
 		}
+	}
+	
+	@Override
+	public SERVICE_PROVIDER getServiceProvider() {		
+		return SERVICE_PROVIDER.LM_STUDIO;
 	}
 }

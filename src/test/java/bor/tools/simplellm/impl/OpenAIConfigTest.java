@@ -33,13 +33,13 @@ class OpenAIConfigTest extends OpenAILLMServiceTestBase {
 		assertNotNull(defaultConfig.getBaseUrl(), "Base URL should be set");
 		assertTrue(defaultConfig.getBaseUrl().contains("openai.com"), "Should point to OpenAI endpoint");
 		assertEquals("OPENAI_API_TOKEN", defaultConfig.getApiTokenEnvironment(), "Should use OPENAI_API_TOKEN env var");
-		assertNotNull(defaultConfig.getModelMap(), "Model map should not be null");
-		assertFalse(defaultConfig.getModelMap().isEmpty(), "Should have predefined models");
+		assertNotNull(defaultConfig.getRegisteredModelMap(), "Model map should not be null");
+		assertFalse(defaultConfig.getRegisteredModelMap().isEmpty(), "Should have predefined models");
 
 		System.out.println("Base URL: "
 		            + defaultConfig.getBaseUrl());
 		System.out.println("Available models: "
-		            + defaultConfig.getModelMap().keySet());
+		            + defaultConfig.getRegisteredModelMap().keySet());
 	}
 
 	@Test
@@ -49,7 +49,7 @@ class OpenAIConfigTest extends OpenAILLMServiceTestBase {
 		LLMConfig customConfig = LLMConfig.builder()
 		            .baseUrl("https://api.openai.com/v1/")
 		            .apiToken("test-token")
-		            .modelMap(OpenAILLMService.getDefaultLLMConfig().getModelMap())
+		            .registeredModelMap(OpenAILLMService.getDefaultLLMConfig().getRegisteredModelMap())
 		            .build();
 
 		// When
@@ -65,7 +65,7 @@ class OpenAIConfigTest extends OpenAILLMServiceTestBase {
 	void testModelListing()
 	            throws LLMException {
 		// When
-		List<Model> models = llmService.getRegisteredModels();
+		List<Model> models = llmService.getRegisteredModels().getModels();
 
 		// Then
 		assertNotNull(models, "Models list should not be null");
@@ -93,7 +93,7 @@ class OpenAIConfigTest extends OpenAILLMServiceTestBase {
 	void testModelCapabilities()
 	            throws LLMException {
 		// Given
-		List<Model> models = llmService.getRegisteredModels();
+		List<Model> models = llmService.getRegisteredModels().getModels();
 
 		// When
 		Model gpt4Mini = models.stream().filter(model -> model.getName().equals("gpt-4o-mini")).findFirst().orElse(null);
@@ -148,7 +148,7 @@ class OpenAIConfigTest extends OpenAILLMServiceTestBase {
 	void testModelContextSizes()
 	            throws LLMException {
 		// Given
-		List<Model> models = llmService.getRegisteredModels();
+		List<Model> models = llmService.getRegisteredModels().getModels();
 
 		// Then
 		for (Model model : models) {
@@ -170,7 +170,7 @@ class OpenAIConfigTest extends OpenAILLMServiceTestBase {
 	void testEmbeddingModelIdentification()
 	            throws LLMException {
 		// Given
-		List<Model> models = llmService.getRegisteredModels();
+		List<Model> models = llmService.getRegisteredModels().getModels();
 
 		// When
 		Model embeddingModel =

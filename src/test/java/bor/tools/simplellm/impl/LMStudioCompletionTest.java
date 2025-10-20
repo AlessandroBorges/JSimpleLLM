@@ -221,12 +221,12 @@ class LMStudioCompletionTest extends LMStudioLLMServiceTestBase {
 		assertEquals("LMSTUDIO_API_KEY", lmStudioConfig.getApiTokenEnvironment(), "Should use LMSTUDIO_API_KEY env var");
 
 		// Should have some models configured
-		assertFalse(lmStudioConfig.getModelMap().isEmpty(), "Should have default models configured");
+		assertFalse(lmStudioConfig.getRegisteredModelMap().isEmpty(), "Should have default models configured");
 
 		System.out.println("LM Studio Base URL: "
 		            + lmStudioConfig.getBaseUrl());
 		System.out.println("Available LM Studio models: "
-		            + lmStudioConfig.getModelMap().keySet());
+		            + lmStudioConfig.getRegisteredModelMap().keySet());
 	}
 
 	@Test

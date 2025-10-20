@@ -33,9 +33,11 @@ public class MapModels extends LinkedHashMap<String, Model> {
 	 * Adds a model to the map using its name as the key.
 	 * 
 	 * @param model the model to add
+	 * @return true if the model was added, false if a model with the same name already exists
 	 */
-	public void add(Model model) {
-		put(model.getName(), model);
+	public boolean add(Model model) {
+		var m = put(model.getName(), model);
+		return m == null;
 	}
 
 	/**
@@ -112,6 +114,14 @@ public class MapModels extends LinkedHashMap<String, Model> {
 			}
 			return false;
 		}).toList();
+	}
+
+	/**
+	 * Returns an unmodifiable list of all models in the map.
+	 * @return
+	 */
+	public List<Model> getModels() { // TODO Auto-generated method stub
+	  	return List.copyOf(values());
 	}
 
 }

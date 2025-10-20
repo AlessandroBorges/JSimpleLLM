@@ -39,7 +39,7 @@ public abstract class OllamaLLMServiceTestBase {
 		LLMConfig customConfig = LLMConfig.builder()
 		            .baseUrl(baseUrl)
 		            .apiToken(apiKey)
-		            .modelMap(OllamaLLMService.getDefaultLLMConfig().getModelMap())
+		            .registeredModelMap(OllamaLLMService.getDefaultLLMConfig().getRegisteredModelMap())
 		            .build();
 
 		return new OllamaLLMService(customConfig);
@@ -65,7 +65,7 @@ public abstract class OllamaLLMServiceTestBase {
 	/**
 	 * Get the first available model from the configuration.
 	 */
-	protected String getFirstAvailableModel() { return config.getModelMap().keySet().iterator().next(); }
+	protected String getFirstAvailableModel() { return config.getRegisteredModelMap().keySet().iterator().next(); }
 
 	/**
 	 * Check if integration tests should run.

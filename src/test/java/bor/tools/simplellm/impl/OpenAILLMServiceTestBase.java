@@ -40,7 +40,7 @@ public abstract class OpenAILLMServiceTestBase {
 		LLMConfig customConfig = LLMConfig.builder()
 		            .baseUrl(baseUrl)
 		            .apiToken(apiToken)
-		            .modelMap(OpenAILLMService.getDefaultLLMConfig().getModelMap())
+		            .registeredModelMap(OpenAILLMService.getDefaultLLMConfig().getRegisteredModelMap())
 		            .build();
 
 		return new OpenAILLMService(customConfig);

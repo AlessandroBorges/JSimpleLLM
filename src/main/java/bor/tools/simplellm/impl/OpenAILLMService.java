@@ -19,9 +19,11 @@ import static bor.tools.simplellm.Model_Type.VISION;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
@@ -37,6 +39,7 @@ import bor.tools.simplellm.ModelEmbedding;
 import bor.tools.simplellm.ModelEmbedding.Embeddings_Op;
 import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.ResponseStream;
+import bor.tools.simplellm.SERVICE_PROVIDER;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.chat.ContentType;
 import bor.tools.simplellm.chat.ContentWrapper;
@@ -54,9 +57,6 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the LLMService interface for OpenAI's Large Language Model
@@ -173,7 +173,7 @@ public class OpenAILLMService implements LLMService {
 		defaultLLMConfig = LLMConfig.builder()
 		            .apiTokenEnvironment("OPENAI_API_KEY")
 		            .baseUrl("https://api.openai.com/v1/")
-		            .modelMap(map)
+		            .registeredModelMap(map)
 		            .build();
 	}
 
@@ -447,8 +447,8 @@ public class OpenAILLMService implements LLMService {
 	 * </p>
 	 */
 	@Override
-	public List<Model> getRegisteredModels() throws LLMException {
-		return config.getModelMap().values().stream().toList();
+	public MapModels getRegisteredModels() throws LLMException {
+		return config.getRegisteredModelMap();
 	}
 
 	/**
@@ -470,7 +470,9 @@ public class OpenAILLMService implements LLMService {
 		
         Object modelObj = params.getModel();
         if(modelObj==null) {
-			throw new LLMException("Model must be specified in parameters for embeddings.");
+        	modelObj = getLLMConfig().getDefaultEmbeddingModelName();
+        	if(modelObj==null)
+        		throw new LLMException("Model must be specified in parameters for embeddings.");
 		}
         
         Model model = (Model) getLLMConfig().getModel(modelObj.toString());
@@ -578,7 +580,7 @@ public class OpenAILLMService implements LLMService {
 		}
 
 		// Check if the model is configured with RESPONSES_API capability
-		Model modelConfig = config.getModelMap().get(model);
+		Model modelConfig = config.getRegisteredModelMap().get(model);
 		if (modelConfig != null) {
 			return modelConfig.getTypes().contains(RESPONSES_API) || modelConfig.isType(GPT5_CLASS);
 		}
@@ -1060,9 +1062,23 @@ public class OpenAILLMService implements LLMService {
 	 * @return
 	 */
 	protected MapParam checkParams(Chat chat, MapParam params) throws LLMException {	
-		params = fixParams(params, chat);			
-		Model model = (Model) params.getModel();
+		params = fixParams(params, chat);	
+		
+		Object modelObj = params.getModel();
+		if(modelObj == null) {
+			modelObj = getLLMConfig().getDefaultModelName();
+		}
+		
+		Model model = modelObj instanceof Model ? (Model) modelObj 
+					 : getLLMConfig().getModel(modelObj.toString());
 			
+		if(this.isModelOnline(model)==false) {
+			throw new LLMException("Model "+model.getName()+" is not available online.");
+		}
+		
+		if(model==null) {
+			throw new LLMException("Model "+modelObj+" not found in configuration.");
+		}
 		// Create parameters copy and enable streaming
 		MapParam checkedParams = new MapParam(params);		
 			
@@ -1170,10 +1186,17 @@ public class OpenAILLMService implements LLMService {
 	 */
 	@Override
 	public String getDefaultModelName() {
-		var txt = getLLMConfig().getModelMap().getModel(DEFAULT_MODEL);
-
+		var config = getLLMConfig();
+		if(config==null) {
+			return DEFAULT_MODEL;
+		}
+		if(config.getDefaultModelName()==null) {
+			config.setDefaultModelName(DEFAULT_MODEL);
+		}		
+		Model txt = config.getRegisteredModelMap().getModel(DEFAULT_MODEL);
 		return txt != null ? txt.getName() : DEFAULT_MODEL;
 	}
+		
 
 	// ================== IMAGE GENERATION METHODS ==================
 
@@ -1300,6 +1323,11 @@ public class OpenAILLMService implements LLMService {
 		throw new LLMException(
 		            "Image editing and variations require multipart upload support, which is not yet implemented. "
 		                        + "Only image generation from text prompts is currently supported.");
+	}
+
+	@Override
+	public SERVICE_PROVIDER getServiceProvider() {		
+		return SERVICE_PROVIDER.OPENAI;
 	}
 
 }
