@@ -249,24 +249,24 @@ public class PerplexityIntegrationTest {
         Chat chat = new Chat();
         chat.setModel("sonar");
 
-        MapParam params = new MapParam().maxTokens(150);
+        MapParam params = new MapParam().maxTokens(500);
 
         try {
             // First query
             SearchResponse response1 = searchService.webSearchChat(
                     chat,
-                    "What is the capital of France?",
+                    "Qual é a Capital do Brasil?",
                     params
             );
 
             assertNotNull(response1, "First response should not be null");
-            assertTrue(response1.getResponse().getText().toLowerCase().contains("paris"),
-                    "First response should mention Paris");
+            assertTrue(response1.getResponse().getText().toLowerCase().contains("brasília"),
+                    "First response should mention Brasília");
 
             // Follow-up query (should use context)
             SearchResponse response2 = searchService.webSearchChat(
                     chat,
-                    "What is its population?",
+                    "Qual é a sua população?",
                     params
             );
 

@@ -122,7 +122,27 @@ public class LLMConfig {
 	 * </p>
 	 */
 	private String defaultEmbeddingModelName;
-	
+
+	/**
+	 * Default parameters to be applied to all requests unless overridden.
+	 * <p>
+	 * This allows configuring provider-specific defaults at the service level,
+	 * such as default temperature, search filters, reasoning effort, etc.
+	 * Parameters specified in individual requests will override these defaults.
+	 * </p>
+	 * <p>
+	 * Example for Perplexity:
+	 * <pre>{@code
+	 * MapParam defaults = new MapParam()
+	 *     .returnRelatedQuestions(true)
+	 *     .searchMode("web")
+	 *     .temperature(0.7f);
+	 * config.setDefaultParams(defaults);
+	 * }</pre>
+	 * </p>
+	 */
+	private MapParam defaultParams;
+
 	/**
 	 * Retrieves a registered model by its name or alias.
 	 * <p>
@@ -152,11 +172,11 @@ public class LLMConfig {
 	} 
 	
 	/**
-	 * Add models  
+	 * Add models
 	 * @param models - Iterable of Model instances or a Map containing Model instances as values
 	 * @return MapModels instance for method chaining
 	 */
-	public MapModels addModels(Iterable<Model> models) {		 
+	public MapModels addModels(Iterable<Model> models) {
 		    if(models instanceof Map) {
 		        for (var m : ((Map<?, ?>) models).values()) {
 		            if (m instanceof Model) {
@@ -164,7 +184,7 @@ public class LLMConfig {
 		            }
 		        }
 		        return this.registeredModelMap;
-		    } else 
+		    } else
 			if (models != null) {
 				for (var m : models) {
 					this.registeredModelMap.put(m.getName(), m);
@@ -172,5 +192,34 @@ public class LLMConfig {
 			}
 			return this.registeredModelMap;
 		}
+
+	/**
+	 * Merges default parameters with provided parameters.
+	 * <p>
+	 * If both defaultParams and params are null, returns a new empty MapParam.
+	 * If params is null, returns a copy of defaultParams.
+	 * If defaultParams is null, returns params unchanged.
+	 * Otherwise, creates a new MapParam with defaults first, then overlays
+	 * the provided params (which take precedence).
+	 * </p>
+	 *
+	 * @param params the request-specific parameters (can be null)
+	 * @return merged parameters with defaults applied
+	 */
+	public MapParam mergeWithDefaults(MapParam params) {
+		if (defaultParams == null && params == null) {
+			return new MapParam();
+		}
+		if (params == null) {
+			return new MapParam(defaultParams);
+		}
+		if (defaultParams == null) {
+			return params;
+		}
+		// Merge: start with defaults, then overlay params
+		MapParam merged = new MapParam(defaultParams);
+		merged.putAll(params);
+		return merged;
+	}
 }
 // LLMConfig

@@ -69,6 +69,11 @@ import lombok.EqualsAndHashCode;
 })
 public class SearchResponse extends CompletionResponse {
 
+	/**
+	 * Unique identifier for the search or chat response.
+	 */	
+	String id;
+	
     /**
      * List of URLs cited in the response.
      * <p>
@@ -330,4 +335,6 @@ public class SearchResponse extends CompletionResponse {
         public ImageResult() {
         }
     }
+
+
 }

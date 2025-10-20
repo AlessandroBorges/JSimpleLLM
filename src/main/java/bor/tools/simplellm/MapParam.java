@@ -43,6 +43,9 @@ public class MapParam extends LinkedHashMap<String, Object> {
 	public static final String RETURN_RELATED_QUESTIONS = "return_related_questions";
 	public static final String SEARCH_CONTEXT = "search_context";
 	public static final String SEARCH_MODE = "search_mode";
+	public static final String USER_LOCATION = "user_location";
+	public static final String SEARCH_AFTER_DATE_FILTER = "search_after_date_filter";
+	public static final String SEARCH_BEFORE_DATE_FILTER = "search_before_date_filter";
 
 
 	/**
@@ -589,6 +592,127 @@ public class MapParam extends LinkedHashMap<String, Object> {
 	 */
 	public String getSearchMode() {
 		return (String) get(SEARCH_MODE);
+	}
+
+	/**
+	 * Sets user location for localized search results (Perplexity specific).
+	 * <p>
+	 * Provides geographical context to improve search relevance.
+	 * The location map should contain: "latitude", "longitude", and optionally "country".
+	 * </p>
+	 * <p>
+	 * Example:
+	 * <pre>{@code
+	 * Map<String, Object> location = new LinkedHashMap<>();
+	 * location.put("latitude", -15.7933);
+	 * location.put("longitude", -47.8827);
+	 * location.put("country", "br");
+	 * params.userLocation(location);
+	 * }</pre>
+	 * </p>
+	 *
+	 * @param location map containing latitude, longitude, and optionally country
+	 * @return this object for method chaining
+	 */
+	public MapParam userLocation(Map<String, Object> location) {
+		if (location == null || location.isEmpty())
+			super.remove(USER_LOCATION);
+		else
+			put(USER_LOCATION, location);
+		return this;
+	}
+
+	/**
+	 * Sets user location using individual values (convenience method).
+	 *
+	 * @param latitude the latitude coordinate
+	 * @param longitude the longitude coordinate
+	 * @param country the ISO country code (e.g., "br", "us")
+	 * @return this object for method chaining
+	 */
+	public MapParam userLocation(double latitude, double longitude, String country) {
+		Map<String, Object> location = new LinkedHashMap<>();
+		location.put("latitude", latitude);
+		location.put("longitude", longitude);
+		if (country != null && !country.isEmpty()) {
+			location.put("country", country);
+		}
+		put(USER_LOCATION, location);
+		return this;
+	}
+
+	/**
+	 * Sets the after-date filter for search results (Perplexity specific).
+	 * <p>
+	 * Only return results published after this date.
+	 * Date format: "MM/DD/YYYY"
+	 * </p>
+	 * <p>
+	 * Example: {@code params.searchAfterDateFilter("01/01/2025")}
+	 * </p>
+	 *
+	 * @param date the date in MM/DD/YYYY format
+	 * @return this object for method chaining
+	 */
+	public MapParam searchAfterDateFilter(String date) {
+		if (date == null)
+			super.remove(SEARCH_AFTER_DATE_FILTER);
+		else
+			put(SEARCH_AFTER_DATE_FILTER, date);
+		return this;
+	}
+
+	/**
+	 * Sets the before-date filter for search results (Perplexity specific).
+	 * <p>
+	 * Only return results published before this date.
+	 * Date format: "MM/DD/YYYY"
+	 * </p>
+	 * <p>
+	 * Example: {@code params.searchBeforeDateFilter("12/31/2025")}
+	 * </p>
+	 *
+	 * @param date the date in MM/DD/YYYY format
+	 * @return this object for method chaining
+	 */
+	public MapParam searchBeforeDateFilter(String date) {
+		if (date == null)
+			super.remove(SEARCH_BEFORE_DATE_FILTER);
+		else
+			put(SEARCH_BEFORE_DATE_FILTER, date);
+		return this;
+	}
+
+	/**
+	 * Gets the user location if set.
+	 *
+	 * @return map containing location data or null if not set
+	 */
+	@SuppressWarnings("unchecked")
+	public Map<String, Object> getUserLocation() {
+		Object value = get(USER_LOCATION);
+		if (value instanceof Map) {
+			return (Map<String, Object>) value;
+		}
+		return null;
+	}
+
+	/**
+	 * Gets the search after date filter if set.
+	 *
+	 * @return the date string or null if not set
+	 */
+	public String getSearchAfterDateFilter() {
+		return (String) get(SEARCH_AFTER_DATE_FILTER);
+	}
+
+	/**
+	 * Gets the search before date filter if set.
+	 *
+	 * @return the date string or null if not set
+	 */
+	public String getSearchBeforeDateFilter() {
+		return (String) get(SEARCH_BEFORE_DATE_FILTER);
 	}
 
 }

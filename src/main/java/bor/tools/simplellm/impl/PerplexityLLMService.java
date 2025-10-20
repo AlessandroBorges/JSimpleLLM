@@ -8,6 +8,7 @@ import static bor.tools.simplellm.Model_Type.REASONING;
 import static bor.tools.simplellm.Model_Type.WEBSEARCH;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -148,11 +149,22 @@ public class PerplexityLLMService implements LLMService, WebSearch {
         map.add(sonar_reasoning_pro);
         map.add(r1_1776);
 
+        // Configure sensible defaults for Perplexity
+        MapParam defaultParams = new MapParam()
+                .searchMode("web")                    // Default to web search mode
+                .returnRelatedQuestions(true)         // Enable related questions by default
+                .temperature(0.7f)                   // Balanced creativity
+                .userLocation(-15.7933, -47.8827, "br")
+                .searchDomainFilter(new String[]{"-facebook.com", "-twitter.com", "-instagram.com"})
+                
+                ;
+                
         defaultLLMConfig = LLMConfig.builder()
                 .apiTokenEnvironment("PERPLEXITY_API_KEY")
                 .baseUrl(DEFAULT_BASE_URL)
                 .registeredModelMap(map)
                 .defaultModelName(DEFAULT_MODEL)
+                .defaultParams(defaultParams)
                 .build();
     }
 
@@ -250,10 +262,10 @@ public class PerplexityLLMService implements LLMService, WebSearch {
 
     @Override
     public CompletionResponse completion(String systemPrompt, String query, MapParam params) throws LLMException {
+        // Merge with defaults
+        params = config.mergeWithDefaults(params);
+
         // Ensure model is set
-        if (params == null) {
-            params = new MapParam();
-        }
         if (params.getModel() == null) {
             params.model(getDefaultModelName());
         }
@@ -270,10 +282,10 @@ public class PerplexityLLMService implements LLMService, WebSearch {
 
     @Override
     public CompletionResponse chatCompletion(Chat chat, String query, MapParam params) throws LLMException {
+        // Merge with defaults
+        params = config.mergeWithDefaults(params);
+
         // Ensure model is set
-        if (params == null) {
-            params = new MapParam();
-        }
         if (params.getModel() == null) {
             Object chatModel = chat.getModel();
             if (chatModel != null) {
@@ -294,10 +306,27 @@ public class PerplexityLLMService implements LLMService, WebSearch {
 
         // Add response to chat
         if (response.getResponse() != null) {
-            String content = response.getResponse().getText();
+            String id = response.getId();
+        	String content = response.getResponse().getText();
             String reasoning = response.getReasoningContent();
-            if (reasoning != null) {
+
+            // update the chat ID for next chat rounds
+            chat.setId(id);
+
+            // Create SearchMetadata from response if search data is present
+            bor.tools.simplellm.chat.SearchMetadata searchMetadata = null;
+            if (response.hasCitations() || response.hasSearchResults() ||
+                response.hasRelatedQuestions() || response.hasImages()) {
+                searchMetadata = new bor.tools.simplellm.chat.SearchMetadata(response);
+            }
+
+            // Add message with appropriate metadata
+            if (reasoning != null && searchMetadata != null) {
+                chat.addAssistantMessage(content, reasoning, searchMetadata);
+            } else if (reasoning != null) {
                 chat.addAssistantMessage(content, reasoning);
+            } else if (searchMetadata != null) {
+                chat.addAssistantMessage(content, searchMetadata);
             } else {
                 chat.addAssistantMessage(content);
             }
@@ -309,10 +338,10 @@ public class PerplexityLLMService implements LLMService, WebSearch {
     @Override
     public CompletionResponse completionStream(ResponseStream responseStream, String systemPrompt,
             String query, MapParam params) throws LLMException {
+        // Merge with defaults
+        params = config.mergeWithDefaults(params);
+
         // Ensure model is set
-        if (params == null) {
-            params = new MapParam();
-        }
         if (params.getModel() == null) {
             params.model(getDefaultModelName());
         }
@@ -338,10 +367,10 @@ public class PerplexityLLMService implements LLMService, WebSearch {
     @Override
     public CompletionResponse chatCompletionStream(ResponseStream responseStream, Chat chat, String query,
             MapParam params) throws LLMException {
+        // Merge with defaults
+        params = config.mergeWithDefaults(params);
+
         // Ensure model is set
-        if (params == null) {
-            params = new MapParam();
-        }
         if (params.getModel() == null) {
             Object chatModel = chat.getModel();
             if (chatModel != null) {
@@ -368,8 +397,21 @@ public class PerplexityLLMService implements LLMService, WebSearch {
             if (searchResponse.getResponse() != null) {
                 String content = searchResponse.getResponse().getText();
                 String reasoning = searchResponse.getReasoningContent();
-                if (reasoning != null) {
+
+                // Create SearchMetadata from response if search data is present
+                bor.tools.simplellm.chat.SearchMetadata searchMetadata = null;
+                if (searchResponse.hasCitations() || searchResponse.hasSearchResults() ||
+                    searchResponse.hasRelatedQuestions() || searchResponse.hasImages()) {
+                    searchMetadata = new bor.tools.simplellm.chat.SearchMetadata(searchResponse);
+                }
+
+                // Add message with appropriate metadata
+                if (reasoning != null && searchMetadata != null) {
+                    chat.addAssistantMessage(content, reasoning, searchMetadata);
+                } else if (reasoning != null) {
                     chat.addAssistantMessage(content, reasoning);
+                } else if (searchMetadata != null) {
+                    chat.addAssistantMessage(content, searchMetadata);
                 } else {
                     chat.addAssistantMessage(content);
                 }

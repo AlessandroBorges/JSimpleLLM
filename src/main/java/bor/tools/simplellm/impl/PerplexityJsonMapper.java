@@ -257,6 +257,10 @@ public class PerplexityJsonMapper {
         SearchResponse searchResponse = new SearchResponse();
 
         try {
+        	// extract id
+			if (response.containsKey("id")) {
+				searchResponse.setId((String) response.get("id"));
+			}
             // Extract choices
             List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
             if (choices != null && !choices.isEmpty()) {

@@ -353,7 +353,44 @@ public class Chat {
 	public Message addAssistantMessage(String text, String reasoning) {
 		Message m = new Message(MessageRole.ASSISTANT, text);
 		m.setReasoning(reasoning);
-		return addMessage(m);		
+		return addMessage(m);
+	}
+
+	/**
+	 * Adds an assistant message with search metadata to the chat.
+	 * <p>
+	 * This method is useful when adding responses from web search-enabled models
+	 * (e.g., Perplexity AI) that include citations, search results, and related questions.
+	 * </p>
+	 *
+	 * @param text the assistant message content
+	 * @param searchMetadata the search metadata (citations, search results, etc.)
+	 * @return the added message
+	 */
+	public Message addAssistantMessage(String text, SearchMetadata searchMetadata) {
+		Message m = new Message(MessageRole.ASSISTANT, text);
+		m.setSearchMetadata(searchMetadata);
+		return addMessage(m);
+	}
+
+	/**
+	 * Adds an assistant message with both reasoning and search metadata to the chat.
+	 * <p>
+	 * This method is useful when adding responses from reasoning-enabled web search models
+	 * (e.g., Perplexity's sonar-reasoning models) that provide both reasoning traces and
+	 * search results.
+	 * </p>
+	 *
+	 * @param text the assistant message content
+	 * @param reasoning the reasoning for the response
+	 * @param searchMetadata the search metadata (citations, search results, etc.)
+	 * @return the added message
+	 */
+	public Message addAssistantMessage(String text, String reasoning, SearchMetadata searchMetadata) {
+		Message m = new Message(MessageRole.ASSISTANT, text);
+		m.setReasoning(reasoning);
+		m.setSearchMetadata(searchMetadata);
+		return addMessage(m);
 	}
 
 	/**
