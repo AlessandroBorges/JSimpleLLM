@@ -1,4 +1,4 @@
-package bor.tools.simplellm.impl;
+package bor.tools.simplellm.websearch.impl;
 
 import static bor.tools.simplellm.Model_Type.CITATIONS;
 import static bor.tools.simplellm.Model_Type.DEEP_RESEARCH;
@@ -25,14 +25,16 @@ import bor.tools.simplellm.ModelEmbedding.Embeddings_Op;
 import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.ResponseStream;
 import bor.tools.simplellm.SERVICE_PROVIDER;
-import bor.tools.simplellm.SearchResponse;
-import bor.tools.simplellm.WebSearch;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.exceptions.LLMAuthenticationException;
 import bor.tools.simplellm.exceptions.LLMException;
 import bor.tools.simplellm.exceptions.LLMNetworkException;
 import bor.tools.simplellm.exceptions.LLMRateLimitException;
 import bor.tools.simplellm.exceptions.LLMTimeoutException;
+import bor.tools.simplellm.impl.OpenAIJsonMapper;
+import bor.tools.simplellm.impl.StreamingUtil;
+import bor.tools.simplellm.websearch.SearchResponse;
+import bor.tools.simplellm.websearch.WebSearch;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;

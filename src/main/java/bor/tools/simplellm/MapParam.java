@@ -3,6 +3,9 @@ package bor.tools.simplellm;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import bor.tools.simplellm.websearch.SearchContextSize;
+import bor.tools.simplellm.websearch.SearchMode;
+
 /**
  * A specialized map to manage parameters for LLM requests.
  * <p>
@@ -427,7 +430,7 @@ public class MapParam extends LinkedHashMap<String, Object> {
 	 *
 	 * @param domains array of domains (prefix with "-" to exclude)
 	 * @return this object for method chaining
-	 * @see bor.tools.simplellm.WebSearch
+	 * @see bor.tools.simplellm.websearch.WebSearch
 	 */
 	public MapParam searchDomainFilter(String[] domains) {
 		if (domains == null || domains.length == 0)
@@ -445,7 +448,7 @@ public class MapParam extends LinkedHashMap<String, Object> {
 	 *
 	 * @param period the recency filter
 	 * @return this object for method chaining
-	 * @see bor.tools.simplellm.WebSearch
+	 * @see bor.tools.simplellm.websearch.WebSearch
 	 */
 	public MapParam searchRecencyFilter(String period) {
 		if (period == null)
@@ -460,7 +463,7 @@ public class MapParam extends LinkedHashMap<String, Object> {
 	 *
 	 * @param value true to include images in the response
 	 * @return this object for method chaining
-	 * @see bor.tools.simplellm.SearchResponse#getImages()
+	 * @see bor.tools.simplellm.websearch.SearchResponse#getImages()
 	 */
 	public MapParam returnImages(Boolean value) {
 		if (value == null)
@@ -479,7 +482,7 @@ public class MapParam extends LinkedHashMap<String, Object> {
 	 *
 	 * @param value true to include related questions in the response
 	 * @return this object for method chaining
-	 * @see bor.tools.simplellm.SearchResponse#getRelatedQuestions()
+	 * @see bor.tools.simplellm.websearch.SearchResponse#getRelatedQuestions()
 	 */
 	public MapParam returnRelatedQuestions(Boolean value) {
 		if (value == null)
@@ -526,6 +529,27 @@ public class MapParam extends LinkedHashMap<String, Object> {
 		else
 			put(SEARCH_MODE, mode);
 		return this;
+	}
+	
+	/**
+	 * Sets search context size using the SearchContextSize enum (Perplexity specific).
+	 *
+	 * @param mode the search context size enum
+	 * @return this object for method chaining
+	 */
+	public MapParam searchMode(SearchContextSize mode) {
+		return searchContext(mode == null ? null : mode.name());	
+	}
+	
+	
+	/**
+	 * Sets search mode using the SearchMode enum (Perplexity specific).
+	 *
+	 * @param mode the search mode enum
+	 * @return this object for method chaining
+	 */
+	public MapParam searchMode(SearchMode mode) {
+		return searchMode(mode == null ? null : mode.name());
 	}
 
 	/**

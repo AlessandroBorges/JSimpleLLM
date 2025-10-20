@@ -1,4 +1,4 @@
-package bor.tools.simplellm.impl;
+package bor.tools.simplellm.websearch.impl;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,12 +10,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import bor.tools.simplellm.MapParam;
-import bor.tools.simplellm.SearchResponse;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.chat.ContentType;
 import bor.tools.simplellm.chat.ContentWrapper;
 import bor.tools.simplellm.chat.Message;
 import bor.tools.simplellm.exceptions.LLMException;
+import bor.tools.simplellm.impl.OpenAIJsonMapper;
+import bor.tools.simplellm.websearch.SearchResponse;
 
 /**
  * Utility class for converting between internal POJOs and Perplexity API JSON format.

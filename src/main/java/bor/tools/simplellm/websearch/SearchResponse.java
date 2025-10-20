@@ -1,10 +1,12 @@
-package bor.tools.simplellm;
+package bor.tools.simplellm.websearch;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import bor.tools.simplellm.CompletionResponse;
+import bor.tools.simplellm.MapParam;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

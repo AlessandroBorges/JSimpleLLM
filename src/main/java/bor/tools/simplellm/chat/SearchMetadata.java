@@ -5,7 +5,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-import bor.tools.simplellm.SearchResponse;
+import bor.tools.simplellm.websearch.SearchResponse;
 import lombok.Data;
 
 /**
@@ -112,7 +112,7 @@ public class SearchMetadata {
             }
             if (searchResponse.getSearchResults() != null) {
                 this.searchResults = new ArrayList<>();
-                for (bor.tools.simplellm.SearchResponse.SearchResultMetadata result : searchResponse.getSearchResults()) {
+                for (bor.tools.simplellm.websearch.SearchResponse.SearchResultMetadata result : searchResponse.getSearchResults()) {
                     this.searchResults.add(new SearchResultMetadata(result));
                 }
             }
@@ -121,7 +121,7 @@ public class SearchMetadata {
             }
             if (searchResponse.getImages() != null) {
                 this.images = new ArrayList<>();
-                for (bor.tools.simplellm.SearchResponse.ImageResult image : searchResponse.getImages()) {
+                for (bor.tools.simplellm.websearch.SearchResponse.ImageResult image : searchResponse.getImages()) {
                     this.images.add(new ImageResult(image));
                 }
             }

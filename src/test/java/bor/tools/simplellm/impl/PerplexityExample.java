@@ -4,9 +4,9 @@ import bor.tools.simplellm.LLMService;
 import bor.tools.simplellm.LLMServiceFactory;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.ResponseStream;
-import bor.tools.simplellm.SearchResponse;
-import bor.tools.simplellm.WebSearch;
 import bor.tools.simplellm.chat.Chat;
+import bor.tools.simplellm.websearch.SearchResponse;
+import bor.tools.simplellm.websearch.WebSearch;
 
 /**
  * Example demonstrating usage of Perplexity AI with web search capabilities.

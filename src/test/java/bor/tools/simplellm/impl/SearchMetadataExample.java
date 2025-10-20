@@ -3,11 +3,11 @@ package bor.tools.simplellm.impl;
 import bor.tools.simplellm.LLMService;
 import bor.tools.simplellm.LLMServiceFactory;
 import bor.tools.simplellm.MapParam;
-import bor.tools.simplellm.SearchResponse;
-import bor.tools.simplellm.WebSearch;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.chat.Message;
 import bor.tools.simplellm.chat.SearchMetadata;
+import bor.tools.simplellm.websearch.SearchResponse;
+import bor.tools.simplellm.websearch.WebSearch;
 
 /**
  * Example demonstrating how to access and use SearchMetadata from chat messages.

@@ -3,7 +3,9 @@ package bor.tools.simplellm;
 import bor.tools.simplellm.impl.LMStudioLLMService;
 import bor.tools.simplellm.impl.OllamaLLMService;
 import bor.tools.simplellm.impl.OpenAILLMService;
-import bor.tools.simplellm.impl.PerplexityLLMService;
+import bor.tools.simplellm.websearch.SearchResponse;
+import bor.tools.simplellm.websearch.WebSearch;
+import bor.tools.simplellm.websearch.impl.PerplexityLLMService;
 
 /**
  * Factory class for creating instances of Large Language Model (LLM) service

@@ -1,5 +1,9 @@
-package bor.tools.simplellm;
+package bor.tools.simplellm.websearch;
 
+import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.MapParam;
+import bor.tools.simplellm.Model_Type;
+import bor.tools.simplellm.ResponseStream;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.exceptions.LLMException;
 

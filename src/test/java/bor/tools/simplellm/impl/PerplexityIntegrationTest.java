@@ -14,11 +14,11 @@ import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model;
 import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.SERVICE_PROVIDER;
-import bor.tools.simplellm.SearchResponse;
-import bor.tools.simplellm.WebSearch;
 import bor.tools.simplellm.ModelEmbedding.Embeddings_Op;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.exceptions.LLMException;
+import bor.tools.simplellm.websearch.SearchResponse;
+import bor.tools.simplellm.websearch.WebSearch;
 
 /**
  * Integration tests for Perplexity AI LLM service.

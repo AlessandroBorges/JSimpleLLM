@@ -7,9 +7,10 @@ import bor.tools.simplellm.LLMConfig;
 import bor.tools.simplellm.LLMService;
 import bor.tools.simplellm.LLMServiceFactory;
 import bor.tools.simplellm.MapParam;
-import bor.tools.simplellm.SearchResponse;
-import bor.tools.simplellm.WebSearch;
 import bor.tools.simplellm.chat.Chat;
+import bor.tools.simplellm.websearch.SearchResponse;
+import bor.tools.simplellm.websearch.WebSearch;
+import bor.tools.simplellm.websearch.impl.PerplexityLLMService;
 
 /**
  * Examples demonstrating how to configure and use default parameters
