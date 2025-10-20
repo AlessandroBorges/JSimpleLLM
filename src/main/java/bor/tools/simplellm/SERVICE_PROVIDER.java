@@ -28,7 +28,7 @@ public enum SERVICE_PROVIDER{
 		case "TOGETHER":
 			return TOGETHER;
 		case "PERPLEXITY":
-			return PERPLEXITY; // Perplexity usa a API da Together
+			return PERPLEXITY; 
 		default:
 			throw new IllegalArgumentException("Unsupported LLM service provider: " + provider);
 		}

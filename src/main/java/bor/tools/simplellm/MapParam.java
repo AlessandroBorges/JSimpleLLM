@@ -35,7 +35,15 @@ public class MapParam extends LinkedHashMap<String, Object> {
 	public static final String TOP_P = "top_p";
 	public static final String MIN_P = "min_p";
 	public static final String REPEAT_PENALTY  = "repeat_penalty";
-	
+
+	// Perplexity-specific parameters for web search
+	public static final String SEARCH_DOMAIN_FILTER = "search_domain_filter";
+	public static final String SEARCH_RECENCY_FILTER = "search_recency_filter";
+	public static final String RETURN_IMAGES = "return_images";
+	public static final String RETURN_RELATED_QUESTIONS = "return_related_questions";
+	public static final String SEARCH_CONTEXT = "search_context";
+	public static final String SEARCH_MODE = "search_mode";
+
 
 	/**
 	 * Default constructor initializing an empty parameter map.
@@ -400,6 +408,187 @@ public class MapParam extends LinkedHashMap<String, Object> {
 			}
 		}
 		return null;
+	}
+
+	// ==================== PERPLEXITY WEB SEARCH METHODS ====================
+
+	/**
+	 * Sets the domains to filter search results (Perplexity specific).
+	 * <p>
+	 * You can include or exclude specific domains from search results.
+	 * Prefix a domain with "-" to exclude it.
+	 * </p>
+	 * <p>
+	 * Example: {@code new String[]{"arxiv.org", "nature.com", "-wikipedia.org"}}
+	 * </p>
+	 *
+	 * @param domains array of domains (prefix with "-" to exclude)
+	 * @return this object for method chaining
+	 * @see bor.tools.simplellm.WebSearch
+	 */
+	public MapParam searchDomainFilter(String[] domains) {
+		if (domains == null || domains.length == 0)
+			super.remove(SEARCH_DOMAIN_FILTER);
+		else
+			put(SEARCH_DOMAIN_FILTER, domains);
+		return this;
+	}
+
+	/**
+	 * Sets the time period for search results (Perplexity specific).
+	 * <p>
+	 * Valid values: "hour", "day", "week", "month", "year"
+	 * </p>
+	 *
+	 * @param period the recency filter
+	 * @return this object for method chaining
+	 * @see bor.tools.simplellm.WebSearch
+	 */
+	public MapParam searchRecencyFilter(String period) {
+		if (period == null)
+			super.remove(SEARCH_RECENCY_FILTER);
+		else
+			put(SEARCH_RECENCY_FILTER, period);
+		return this;
+	}
+
+	/**
+	 * Enable/disable returning images in search results (Perplexity specific).
+	 *
+	 * @param value true to include images in the response
+	 * @return this object for method chaining
+	 * @see bor.tools.simplellm.SearchResponse#getImages()
+	 */
+	public MapParam returnImages(Boolean value) {
+		if (value == null)
+			super.remove(RETURN_IMAGES);
+		else
+			put(RETURN_IMAGES, value);
+		return this;
+	}
+
+	/**
+	 * Enable/disable returning related questions (Perplexity specific).
+	 * <p>
+	 * When enabled, the model will suggest related questions that the user
+	 * might want to ask based on the original query.
+	 * </p>
+	 *
+	 * @param value true to include related questions in the response
+	 * @return this object for method chaining
+	 * @see bor.tools.simplellm.SearchResponse#getRelatedQuestions()
+	 */
+	public MapParam returnRelatedQuestions(Boolean value) {
+		if (value == null)
+			super.remove(RETURN_RELATED_QUESTIONS);
+		else
+			put(RETURN_RELATED_QUESTIONS, value);
+		return this;
+	}
+
+	/**
+	 * Sets search context size (Perplexity specific).
+	 * <p>
+	 * Controls how much context is retrieved from search results.
+	 * Valid values: "low", "medium", "high"
+	 * </p>
+	 *
+	 * @param context the context size level
+	 * @return this object for method chaining
+	 */
+	public MapParam searchContext(String context) {
+		if (context == null)
+			super.remove(SEARCH_CONTEXT);
+		else
+			put(SEARCH_CONTEXT, context);
+		return this;
+	}
+
+	/**
+	 * Sets search mode (Perplexity specific).
+	 * <p>
+	 * Valid values: "web", "academic"
+	 * </p>
+	 * <ul>
+	 * <li>"web" - General web search (default)</li>
+	 * <li>"academic" - Focus on academic and scholarly sources</li>
+	 * </ul>
+	 *
+	 * @param mode the search mode
+	 * @return this object for method chaining
+	 */
+	public MapParam searchMode(String mode) {
+		if (mode == null)
+			super.remove(SEARCH_MODE);
+		else
+			put(SEARCH_MODE, mode);
+		return this;
+	}
+
+	/**
+	 * Gets the search domain filter if set.
+	 *
+	 * @return array of domains or null if not set
+	 */
+	public String[] getSearchDomainFilter() {
+		Object value = get(SEARCH_DOMAIN_FILTER);
+		if (value instanceof String[]) {
+			return (String[]) value;
+		}
+		return null;
+	}
+
+	/**
+	 * Gets the search recency filter if set.
+	 *
+	 * @return the recency period or null if not set
+	 */
+	public String getSearchRecencyFilter() {
+		return (String) get(SEARCH_RECENCY_FILTER);
+	}
+
+	/**
+	 * Gets the return images setting if set.
+	 *
+	 * @return true if images should be returned, false otherwise, or null if not set
+	 */
+	public Boolean getReturnImages() {
+		Object value = get(RETURN_IMAGES);
+		if (value instanceof Boolean) {
+			return (Boolean) value;
+		}
+		return null;
+	}
+
+	/**
+	 * Gets the return related questions setting if set.
+	 *
+	 * @return true if related questions should be returned, false otherwise, or null if not set
+	 */
+	public Boolean getReturnRelatedQuestions() {
+		Object value = get(RETURN_RELATED_QUESTIONS);
+		if (value instanceof Boolean) {
+			return (Boolean) value;
+		}
+		return null;
+	}
+
+	/**
+	 * Gets the search context if set.
+	 *
+	 * @return the search context level or null if not set
+	 */
+	public String getSearchContext() {
+		return (String) get(SEARCH_CONTEXT);
+	}
+
+	/**
+	 * Gets the search mode if set.
+	 *
+	 * @return the search mode or null if not set
+	 */
+	public String getSearchMode() {
+		return (String) get(SEARCH_MODE);
 	}
 
 }

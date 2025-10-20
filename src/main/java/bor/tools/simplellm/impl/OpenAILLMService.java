@@ -906,7 +906,10 @@ public class OpenAILLMService implements LLMService {
 	 * {@inheritDoc}
 	 * <p>
 	 * Uses OpenAI's tokenization to count tokens, ensuring accurate counting
-	 * for the specified model's tokenizer.
+	 * for the specified model's tokenizer.<br>
+	 * Default model is gpt-3.5 and uses older cl100k_base<br>
+	 * Use "gpt-5" for modern tokenization, using o200k_base encoding.
+	 * 
 	 * </p>
 	 */
 	@Override
@@ -920,9 +923,10 @@ public class OpenAILLMService implements LLMService {
 
 		// Use default model if not specified
 		if (model == null || model.trim().isEmpty()) {
-			model = "gpt-4o-mini";
+			model = "gpt-3.5";
 		}
-
+		model = model.trim().toLowerCase();
+			
 		// Get encoding for the model
 		Encoding encoding = getEncodingForModel(model);
 		if (encoding == null) {
@@ -946,14 +950,20 @@ public class OpenAILLMService implements LLMService {
 			// Get the encoding registry
 			EncodingRegistry registry = Encodings.newDefaultEncodingRegistry();
 
-			// Map OpenAI models to their appropriate encodings
-			if (model.startsWith("gpt-4") || model.startsWith("gpt-3.5") || model.startsWith("text-")) {
-				return registry.getEncoding("cl100k_base").orElse(null);
-			}
-
 			// For newer models (GPT-5, O3, etc.)
-			if (model.startsWith("gpt-5") || model.startsWith("o3") || model.startsWith("o1")) {
+			if (model.startsWith("gpt-5")
+				|| model.startsWith("gpt-4o")
+				|| model.startsWith("o3") 
+				|| model.startsWith("o1")) 
+			{
 				return registry.getEncoding("o200k_base").orElse(registry.getEncoding("cl100k_base").orElse(null));
+			}
+			
+			// Map OpenAI models to their appropriate encodings
+			if (model.startsWith("gpt-4") 
+				|| model.startsWith("gpt-3.5") 
+				|| model.startsWith("text-")) {
+				return registry.getEncoding("cl100k_base").orElse(null);
 			}
 
 			// For embedding models

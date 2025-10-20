@@ -3,6 +3,7 @@ package bor.tools.simplellm;
 import bor.tools.simplellm.impl.LMStudioLLMService;
 import bor.tools.simplellm.impl.OllamaLLMService;
 import bor.tools.simplellm.impl.OpenAILLMService;
+import bor.tools.simplellm.impl.PerplexityLLMService;
 
 /**
  * Factory class for creating instances of Large Language Model (LLM) service
@@ -20,6 +21,7 @@ import bor.tools.simplellm.impl.OpenAILLMService;
  * Currently supports:
  * <ul>
  * <li>OpenAI API-compatible services - OpenAILLMService</li>
+ * <li>Perplexity AI with web search - PerplexityLLMService</li>
  * <li>Ollama local server - OllamaLLMService</li>
  * <li>LM Studio local server - LMStudioLLMService</li>
  * </ul>
@@ -65,6 +67,12 @@ public class LLMServiceFactory {
 				return createLMStudio();
 			} else {
 				return createLMStudio(config);
+			}
+		case PERPLEXITY:
+			if (config == null) {
+				return createPerplexity();
+			} else {
+				return createPerplexity(config);
 			}
 		case ANTHROPIC:
 			return createOpenAI(config); // Anthropic API is OpenAI-compatible
@@ -202,6 +210,94 @@ public class LLMServiceFactory {
 	 */
 	public static LLMService createLMStudio() {
 		return new LMStudioLLMService();
+	}
+
+	/**
+	 * Creates an instance of Perplexity AI LLM service with web search capabilities.
+	 * <p>
+	 * This method instantiates a Perplexity LLM service implementation that provides
+	 * real-time web search integration. Perplexity models can access the internet
+	 * to provide up-to-date information with citations.
+	 * </p>
+	 * <p>
+	 * Default configuration:
+	 * <ul>
+	 * <li>Base URL: https://api.perplexity.ai</li>
+	 * <li>API Key: from PERPLEXITY_API_KEY environment variable</li>
+	 * <li>Default model: sonar</li>
+	 * <li>Available models: sonar, sonar-pro, sonar-deep-research, sonar-reasoning, sonar-reasoning-pro, r1-1776</li>
+	 * </ul>
+	 * </p>
+	 * <p>
+	 * <b>Web Search Features:</b>
+	 * <ul>
+	 * <li>Real-time web search integration</li>
+	 * <li>Source citations for all web-enabled models</li>
+	 * <li>Domain filtering (include/exclude specific domains)</li>
+	 * <li>Recency filters (hour, day, week, month, year)</li>
+	 * <li>Related questions suggestions</li>
+	 * <li>Optional image results</li>
+	 * </ul>
+	 * </p>
+	 * <p>
+	 * <b>Example usage:</b>
+	 * </p>
+	 * <pre>{@code
+	 * LLMService service = LLMServiceFactory.createPerplexity();
+	 *
+	 * // Use as WebSearch
+	 * if (service instanceof WebSearch) {
+	 *     WebSearch searchService = (WebSearch) service;
+	 *
+	 *     MapParam params = new MapParam()
+	 *         .model("sonar-pro")
+	 *         .searchDomainFilter(new String[]{"arxiv.org", "nature.com"})
+	 *         .searchRecencyFilter("week")
+	 *         .returnRelatedQuestions(true);
+	 *
+	 *     SearchResponse response = searchService.webSearch(
+	 *         "Latest developments in quantum computing",
+	 *         params
+	 *     );
+	 *
+	 *     System.out.println(response.getContent());
+	 *     System.out.println("Citations: " + response.getCitations());
+	 * }
+	 * }</pre>
+	 *
+	 * @param config the LLM configuration containing Perplexity API settings, model
+	 *               definitions, and service endpoints
+	 *
+	 * @return a new {@link LLMService} instance configured for Perplexity AI with web search
+	 *
+	 * @throws IllegalArgumentException if the provided config is null or contains
+	 *                                  invalid configuration parameters
+	 *
+	 * @see LLMService
+	 * @see WebSearch
+	 * @see SearchResponse
+	 * @see LLMConfig
+	 * @see PerplexityLLMService
+	 */
+	public static LLMService createPerplexity(LLMConfig config) {
+		return new PerplexityLLMService(config);
+	}
+
+	/**
+	 * Creates an instance of Perplexity AI LLM service with default configuration.
+	 * <p>
+	 * This is a convenience method that creates a Perplexity service with pre-configured
+	 * settings suitable for most use cases. The API key is read from the PERPLEXITY_API_KEY
+	 * environment variable.
+	 * </p>
+	 *
+	 * @return a new {@link LLMService} instance with default Perplexity configuration
+	 *
+	 * @see #createPerplexity(LLMConfig)
+	 * @see PerplexityLLMService#getDefaultLLMConfig()
+	 */
+	public static LLMService createPerplexity() {
+		return new PerplexityLLMService();
 	}
 
 	// Futuras implementações: createClaude(), createGemini(), etc.

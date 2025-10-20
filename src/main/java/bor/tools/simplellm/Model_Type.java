@@ -20,6 +20,9 @@ package bor.tools.simplellm;
  * <li>{@code VISION} - Vision and image understanding models</li>
  * <li>{@code IMAGE} - Image generation and manipulation models</li>
  * <li>{@code AUDIO} - Audio processing and generation models</li>
+ * <li>{@code WEBSEARCH} - Models with real-time web search capabilities</li>
+ * <li>{@code CITATIONS} - Models that provide source citations</li>
+ * <li>{@code DEEP_RESEARCH} - Models optimized for exhaustive research</li>
  * </ul>
  * 
  * @see bor.tools.simplellm.MapParam#reasoningEffort(Reasoning_Effort)
@@ -89,5 +92,45 @@ public enum Model_Type {
 		/**
 		 * GPT5_CLASS: GPT-5 and o1/o3/04 class models with advanced capabilities
 		 */
-		GPT5_CLASS
+		GPT5_CLASS,
+		/**
+		 * WEBSEARCH: Models with real-time web search capabilities.
+		 * <p>
+		 * Models with this type can access and search the internet in real-time
+		 * to provide up-to-date information. They typically return citations
+		 * and source URLs along with their responses.
+		 * </p>
+		 * <p>
+		 * Example providers: Perplexity AI (sonar models)
+		 * </p>
+		 *
+		 * @see bor.tools.simplellm.WebSearch
+		 * @see bor.tools.simplellm.SearchResponse
+		 */
+		WEBSEARCH,
+		/**
+		 * CITATIONS: Models that provide source citations with their responses.
+		 * <p>
+		 * Models with this type include references to their source materials,
+		 * allowing users to verify information and explore topics in depth.
+		 * Citations are typically URLs to web pages, papers, or documents.
+		 * </p>
+		 *
+		 * @see bor.tools.simplellm.SearchResponse#getCitations()
+		 */
+		CITATIONS,
+		/**
+		 * DEEP_RESEARCH: Models optimized for exhaustive research tasks.
+		 * <p>
+		 * These models perform extensive multi-step research, often conducting
+		 * dozens or hundreds of searches to provide comprehensive analysis.
+		 * They are designed for in-depth exploration of complex topics.
+		 * </p>
+		 * <p>
+		 * Example: Perplexity's sonar-deep-research model
+		 * </p>
+		 *
+		 * @see bor.tools.simplellm.SearchResponse#getSearchQueriesCount()
+		 */
+		DEEP_RESEARCH
 }
