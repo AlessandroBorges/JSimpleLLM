@@ -3,4 +3,4 @@
  * within the SimpleLLM tool, including interactions with language models for
  * conversational AI.
  */
-package bor.tools.simplellm.chat;
+package bor.tools.simplellm;
