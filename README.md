@@ -26,6 +26,15 @@ JSimpleLLM provides a clean abstraction layer for integrating LLM capabilities i
 - **Tools Integration**: Support for function calling and external tools
 - **Session Persistence**: Chat session management and storage
 
+### Web Search Integration (NEW! 🔍)
+- **Real-time Web Search**: Access up-to-date information from the internet
+- **Source Citations**: Automatic citation of sources for verifiable information
+- **Search Providers**: Perplexity AI (implemented), DeepSeek, Gemini, Wikipedia (planned)
+- **Advanced Filtering**: Domain filters, recency controls, date ranges
+- **Related Questions**: AI-generated follow-up question suggestions
+- **Search Metadata**: Persistent search results attached to chat messages
+- **WebSearchFactory**: Dedicated factory for creating web search services
+
 ## Architecture
 
 JSimpleLLM follows a clean, extensible architecture:
@@ -169,6 +178,131 @@ ContentWrapper content = new ContentWrapper(ContentType.TEXT, "Custom content");
 Message customMsg = new Message(MessageRole.ASSISTANT, content);
 ```
 
+## Web Search
+
+### WebSearchFactory (NEW! 🔍)
+
+JSimpleLLM now includes dedicated web search capabilities through the `WebSearchFactory`. This factory creates services that implement the `WebSearch` interface, providing real-time access to web information with citations.
+
+#### Quick Start - Web Search
+
+```java
+// Create web search service
+WebSearch search = WebSearchFactory.createPerplexity();
+
+// Simple search with citations
+SearchResponse response = search.webSearch(
+    "Latest developments in quantum computing",
+    new MapParam().model("sonar-pro")
+);
+
+// Access results
+System.out.println(response.getResponse().getText());
+System.out.println("Sources: " + response.getCitations());
+System.out.println("Related: " + response.getRelatedQuestions());
+```
+
+#### Environment Setup
+
+```bash
+# Set Perplexity API key
+export PERPLEXITY_API_KEY=pplx-xxxxxxxxxxxxx
+```
+
+#### Advanced Search Features
+
+```java
+// Academic search with filters
+MapParam params = new MapParam()
+    .model("sonar-pro")
+    .searchDomainFilter(new String[]{
+        "arxiv.org",
+        "scholar.google.com",
+        "-wikipedia.org"  // Exclude Wikipedia
+    })
+    .searchRecencyFilter("week")      // Last week only
+    .searchAfterDateFilter("01/01/2025")
+    .returnRelatedQuestions(true)
+    .maxTokens(1500);
+
+SearchResponse response = search.webSearch(
+    "Recent breakthroughs in CRISPR gene editing",
+    params
+);
+```
+
+#### Conversational Web Search
+
+```java
+Chat chat = new Chat();
+WebSearch search = WebSearchFactory.createPerplexity();
+
+// First question
+SearchResponse r1 = search.webSearchChat(
+    chat,
+    "What is quantum computing?",
+    null
+);
+
+// Follow-up (uses context!)
+SearchResponse r2 = search.webSearchChat(
+    chat,
+    "What are its main applications?",
+    null
+);
+
+// Access search metadata from messages
+Message lastMsg = chat.getLastMessage();
+if (lastMsg.hasSearchMetadata()) {
+    SearchMetadata metadata = lastMsg.getSearchMetadata();
+    System.out.println("Citations: " + metadata.getCitations());
+}
+```
+
+#### Supported Search Providers
+
+| Provider | Status | Features |
+|----------|--------|----------|
+| **Perplexity AI** | ✅ Implemented | Real-time search, citations, domain/recency filters |
+| **DeepSeek** | 🔜 Planned | Chinese language optimization, reasoning |
+| **Google Gemini** | 🔜 Planned | Google Search grounding, grounding chunks |
+| **Wikipedia** | 🔜 Planned | Structured knowledge base search |
+| **Tavily** | 🔜 Planned | Research-focused academic search |
+| **Brave Search** | 🔜 Planned | Privacy-focused independent search |
+
+#### WebSearchFactory vs LLMServiceFactory
+
+Both factories can create Perplexity services, but with different semantics:
+
+```java
+// LLMServiceFactory - Returns LLMService (requires cast for web search)
+LLMService service = LLMServiceFactory.createPerplexity();
+WebSearch search = (WebSearch) service;  // Cast required
+
+// WebSearchFactory - Returns WebSearch directly (cleaner)
+WebSearch search = WebSearchFactory.createPerplexity();  // No cast!
+```
+
+**Use WebSearchFactory when:**
+- You only need web search capabilities
+- You want cleaner code without casts
+- You're building search-focused applications
+
+**Use LLMServiceFactory when:**
+- You need full LLM service capabilities
+- You're using Perplexity for both LLM and search
+
+#### Complete Example
+
+See [WebSearchFactoryExample.java](src/test/java/bor/tools/simplellm/impl/WebSearchFactoryExample.java) for comprehensive examples including:
+- Basic usage
+- Custom configuration
+- Conversational search
+- Streaming search
+- Research assistant pattern
+
+For detailed documentation, see [PERPLEXITY_TUTORIAL.md](PERPLEXITY_TUTORIAL.md).
+
 ## Error Handling
 
 JSimpleLLM provides specific exception types:
@@ -212,14 +346,30 @@ mvn install
 
 ## Roadmap
 
+### Core LLM Services
 - ✅ OpenAI API integration
+- ✅ Ollama local model support
+- ✅ LM Studio support
 - 🔄 Complete implementation of all service methods
-- 📋 Anthropic Claude API support
-- 📋 Google Gemini API support
-- 📋 Ollama local model support
+- 📋 Anthropic Claude API support (OpenAI-compatible mode)
+- 📋 Together AI support (OpenAI-compatible mode)
 - 📋 Comprehensive test suite
 - 📋 Advanced context management
 - 📋 Batch processing capabilities
+
+### Web Search Integration (NEW!)
+- ✅ WebSearch interface and SearchResponse
+- ✅ WebSearchFactory with provider enum
+- ✅ Perplexity AI integration with full feature support
+- ✅ Search metadata attached to messages
+- ✅ Domain filtering and recency controls
+- ✅ Conversational search with context
+- ✅ Streaming search support
+- 📋 DeepSeek web search integration
+- 📋 Google Gemini grounding API
+- 📋 Wikipedia structured search
+- 📋 Tavily research API
+- 📋 Brave Search API
 
 ## License
 

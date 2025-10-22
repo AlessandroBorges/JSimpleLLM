@@ -86,20 +86,52 @@ Teste se tudo está configurado corretamente:
 
 ```java
 import bor.tools.simplellm.*;
+import bor.tools.simplellm.websearch.*;
 
 public class PerplexityTest {
     public static void main(String[] args) {
         try {
+            // Opção 1: Via LLMServiceFactory (tradicional)
             LLMService service = LLMServiceFactory.createPerplexity();
             System.out.println("✅ Perplexity configurado com sucesso!");
             System.out.println("Provider: " + service.getServiceProvider());
-            System.out.println("Modelos disponíveis: " + service.getRegisteredModels().size());
+
+            // Opção 2: Via WebSearchFactory (recomendado para busca)
+            WebSearch search = WebSearchFactory.createPerplexity();
+            System.out.println("✅ WebSearch configurado com sucesso!");
+            System.out.println("Modelos disponíveis: " + ((LLMService)search).getRegisteredModels().size());
         } catch (Exception e) {
             System.err.println("❌ Erro: " + e.getMessage());
         }
     }
 }
 ```
+
+### 5. Escolhendo a Factory Correta
+
+JSimpleLLM oferece duas factories para criar serviços Perplexity:
+
+#### LLMServiceFactory
+```java
+LLMService service = LLMServiceFactory.createPerplexity();
+WebSearch search = (WebSearch) service;  // Cast necessário
+```
+
+**Use quando:**
+- Precisa de funcionalidades LLM completas (completion, embeddings, etc.)
+- Usa Perplexity tanto para LLM quanto para busca
+
+#### WebSearchFactory (NOVO! 🔍)
+```java
+WebSearch search = WebSearchFactory.createPerplexity();  // Sem cast!
+```
+
+**Use quando:**
+- Foca em busca web com citações
+- Quer código mais limpo sem casts
+- Constrói aplicações centradas em pesquisa
+
+**Ambas retornam a mesma implementação** (`PerplexityLLMService`), mas `WebSearchFactory` oferece uma API mais semântica e limpa para casos de uso de busca.
 
 ---
 
@@ -279,12 +311,16 @@ if (assistantMessage.hasSearchMetadata()) {
 
 ```java
 import bor.tools.simplellm.*;
+import bor.tools.simplellm.websearch.*;
 
 public class Example1_BasicSearch {
     public static void main(String[] args) throws Exception {
-        // Criar serviço Perplexity
-        LLMService service = LLMServiceFactory.createPerplexity();
-        WebSearch searchService = (WebSearch) service;
+        // Criar serviço de busca (forma recomendada)
+        WebSearch searchService = WebSearchFactory.createPerplexity();
+
+        // OU via LLMServiceFactory (forma tradicional)
+        // LLMService service = LLMServiceFactory.createPerplexity();
+        // WebSearch searchService = (WebSearch) service;
 
         // Configurar parâmetros
         MapParam params = new MapParam()
