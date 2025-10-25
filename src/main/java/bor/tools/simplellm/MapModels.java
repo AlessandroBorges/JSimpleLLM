@@ -37,6 +37,15 @@ public class MapModels extends LinkedHashMap<String, Model> {
 	 */
 	public boolean add(Model model) {
 		var m = put(model.getName(), model);
+		
+		String alias = model.getAlias();
+		if( alias != null 
+			&& !alias.isEmpty() 
+			&& !this.containsKey(alias) == false) 
+		{
+			var ma = put(model.getAlias(), model);
+			m = m==null ? ma : m;
+		}
 		return m == null;
 	}
 
@@ -48,8 +57,11 @@ public class MapModels extends LinkedHashMap<String, Model> {
 	 * @return the model if found, null otherwise
 	 */
 	public Model getByAlias(String alias) {
+		if (alias == null || alias.isEmpty()) {
+			return null;
+		}
 		for (Model m : values()) {
-			if (m.getAlias().equalsIgnoreCase(alias)) {
+			if (alias.equalsIgnoreCase(m.getAlias())) {
 				return m;
 			}
 		}

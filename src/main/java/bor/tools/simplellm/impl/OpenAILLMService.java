@@ -137,7 +137,10 @@ public class OpenAILLMService implements LLMService {
 		Model gpt_4_1     = new Model("gpt-4.1", 1047576, LANGUAGE, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
 		Model gpt_4_mini  =
 		            new Model("gpt-4.1-mini", 1047576, LANGUAGE, FAST, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
+		
+		Model gpt_4o = new Model("gpt-4o", 128000, LANGUAGE, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
 		Model gpt_4o_mini = new Model("gpt-4o-mini", 128000, LANGUAGE, FAST, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
+		
 		Model gpt_o3_mini = new Model("o3-mini",
 		            128000,
 		            GPT5_CLASS,
@@ -150,10 +153,15 @@ public class OpenAILLMService implements LLMService {
 		            RESPONSES_API);
 
 		// Image Generation Models (DALL-E)
-		Model dall_e_3 = new Model("dall-e-3", 4000, IMAGE); // 4000 character prompt limit
-		Model dall_e_2 = new Model("dall-e-2", 1000, IMAGE); // 1000 character prompt limit
-
+		Model dall_e_3 = new Model("dall-e-3", 4000, IMAGE, VISION); // 4000 character prompt limit
+		Model dall_e_2 = new Model("dall-e-2", 1000, IMAGE,VISION); // 1000 character prompt limit
+		Model gpt4_vison = new Model("gpt-4-vision-preview",
+		                             "gpt-4-vision",
+		                             128000,
+		                             IMAGE,VISION); // 1000 character prompt limit
+		
 		map.add(gpt_4o_mini);
+		map.add(gpt_4o);
 		map.add(gpt_4_mini);
 		map.add(gpt_4_1);		
 		
@@ -169,6 +177,7 @@ public class OpenAILLMService implements LLMService {
 		map.add(text_emb_3_small);
 		map.add(text_emb_2_ADA);
 		map.add(text_emb_3_large);
+		map.add(gpt4_vison);	
 
 		defaultLLMConfig = LLMConfig.builder()
 		            .apiTokenEnvironment("OPENAI_API_KEY")

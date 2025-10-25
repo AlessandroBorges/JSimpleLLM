@@ -39,7 +39,7 @@ class OpenAIVisionAndImageTest extends OpenAILLMServiceTestBase {
     @DisplayName("Test ImageContent URL conversion to multimodal format")
     void testImageContentUrlConversion() throws LLMException {
         // Given - Create a message with image URL
-        String imageUrl = "https://example.com/test-image.jpg";
+        String imageUrl = "https://imgur.com/gallery/jasmne-has-sketchbook-Axnl51H";
         ContentWrapper.ImageContent imageContent = new ContentWrapper.ImageContent(imageUrl);
         
         Message message = new Message(MessageRole.USER, imageContent);
