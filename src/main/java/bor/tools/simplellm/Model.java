@@ -5,7 +5,8 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import lombok.Data;
+import lombok.*;
+import lombok.Builder.Default;
 
 /**
  * Class representing a specific LLM model configuration.
@@ -25,6 +26,8 @@ import lombok.Data;
  * @author Alessandro Borges
  */
 @Data
+@AllArgsConstructor
+@Builder
 public class Model {
 
 	/**
@@ -51,7 +54,8 @@ public class Model {
 	 * 
 	 * @see Model_Type
 	 */
-	List<Model_Type> types;
+	@Default
+	List<Model_Type> types = new ArrayList<>();
 
 	/**
 	 * The maximum context length supported by this model.
@@ -65,19 +69,14 @@ public class Model {
 	 * on the model's capabilities.
 	 * </p>
 	 */
-	Integer contextLength;
+	@Default 
+	Integer contextLength = 4096;
 
-	/**
-	 * Default constructor.
-	 * <p>
-	 * Initializes the type list with an initial capacity of 2 elements
-	 * to optimize for the common case of models supporting 1-2 types.
-	 * </p>
-	 */
 	public Model() {
-		types = new ArrayList<>();
+		this.types = new ArrayList<>();
+		this.contextLength = 4096;
 	}
-
+	
 	/**
 	 * Parameterized constructor for creating a model with specified properties.
 	 * <p>
@@ -140,6 +139,7 @@ public class Model {
 	 * 
 	 * @param newType
 	 */
+	@JsonIgnore
 	public void addExtraType(Model_Type newType) {
 		if (types.contains(newType) == false) {
 			types.add(newType);
@@ -177,10 +177,57 @@ public class Model {
 	 * @see bor.tools.simplellm.MapParam#getReasoningEffort()
 	 * 
 	 * @return true if the model supports reasoning tasks, false otherwise
-	 */
-	@JsonIgnore
+	 */	
 	public boolean isTypeReasoning() {
 		return types.contains(Model_Type.REASONING) || types.contains(Model_Type.REASONING_PROMPT);
+	}
+	
+	/**
+	 * Create a clone of this model instance.
+	 * <p>
+	 * This method creates a new {@code Model} instance with the same properties
+	 * as the current instance, including name, alias, context length, and types.
+	 * </p>
+	 * 
+	 * @return a new {@code Model} instance that is a clone of this instance
+	 */
+	public Model clone() {
+		Model cloned = new Model();
+		cloned.setName(this.name);
+		cloned.setAlias(this.alias);
+		cloned.setContextLength(this.contextLength);
+		for(var t : this.types) {
+			cloned.addExtraType(t);
+		}
+		return cloned;
+	}
+
+	@Override
+	public String toString() {
+		final int     maxLen  = 10;
+		StringBuilder builder = new StringBuilder();
+		builder.append("Model [");
+		if (name != null) {
+			builder.append("name=");
+			builder.append(name);
+			builder.append(", ");
+		}
+		if (alias != null) {
+			builder.append("alias=");
+			builder.append(alias);
+			builder.append(", ");
+		}
+		if (types != null) {
+			builder.append("types=");
+			builder.append(types.subList(0, Math.min(types.size(), maxLen)));
+			builder.append(", ");
+		}
+		if (contextLength != null) {
+			builder.append("contextLength=");
+			builder.append(contextLength);
+		}
+		builder.append("]");
+		return builder.toString();
 	}
 	
 	/**
@@ -191,9 +238,6 @@ public class Model {
 	 * 
 	 * @return the name of the model
 	 */
-	@Override
-	public final String toString() {
-		return name;
-	}
+	
 
 }

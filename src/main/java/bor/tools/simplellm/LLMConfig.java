@@ -233,12 +233,17 @@ public class LLMConfig {
 	 * @return a new LLMConfig instance that is a deep copy of this instance
 	 */
 	public LLMConfig clone() {
+		
+		MapModels clonedModelMap = new MapModels();
+		for (var entry : this.registeredModelMap.entrySet()) {
+			clonedModelMap.put(entry.getKey(), entry.getValue().clone());
+		}
 		return LLMConfig.builder()
 				.baseUrl(this.baseUrl)
 				.apiToken(this.apiToken)
 				.apiTokenEnvironment(this.apiTokenEnvironment)
 				.additionalProperties(new LinkedHashMap<>(this.additionalProperties))
-				.registeredModelMap(this.registeredModelMap)
+				.registeredModelMap(clonedModelMap)
 				.defaultModelName(this.defaultModelName)
 				.defaultEmbeddingModelName(this.defaultEmbeddingModelName)
 				.defaultParams(this.defaultParams==null ? null : new MapParam(this.defaultParams))

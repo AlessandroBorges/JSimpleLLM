@@ -48,17 +48,15 @@ public class OllamaLLMService extends LMStudioLLMService {
 		// Ollama model definition - using phi-4-mini as requested by user
 
 		// nomic-embed-text:latest
-		Model snowflake  = new ModelEmbedding("snowflake-arctic-embed2", "snowflake", 8000, EMBEDDING, EMBEDDING_DIMENSION);
-		Model nomic      = new ModelEmbedding("nomic-embed-text", "nomic", 8000, EMBEDDING, EMBEDDING_DIMENSION);
-		Model gemma      = new ModelEmbedding("embeddinggemma", "embeddinggemma", 8000, EMBEDDING, EMBEDDING_DIMENSION);
+		Model snowflake  = new ModelEmbedding("snowflake-arctic-embed2", "snowflake", 8192, EMBEDDING, EMBEDDING_DIMENSION);
+		Model nomic      = new ModelEmbedding("nomic-embed-text", "nomic", 2048, EMBEDDING, EMBEDDING_DIMENSION);
+		Model gemma      = new ModelEmbedding("embeddinggemma", "embeddinggemma", 8192, EMBEDDING, EMBEDDING_DIMENSION);
 		
-		Model qwen3_17b   = new Model("qwen3:1.7b", "qwen3-1.7b", 8192, LANGUAGE);		
-		Model phi35_mini = new Model("phi3.5:3.8b-mini-instruct-q5_K_M", "phi3.5-mini", 16000, LANGUAGE);
+		Model qwen3_17b   = new Model("qwen3:1.7b", "qwen3-1.7b", 8192, LANGUAGE);
 		Model phi4_mini  = new Model("kwangsuklee/phi4-mini-inst-q5-250228", "phi4-mini", 16000, LANGUAGE);
 
 		map.add(qwen3_17b);
-		map.add(phi4_mini);
-		map.add(phi35_mini);
+		map.add(phi4_mini);		
 		
 		map.add(snowflake);
 		map.add(nomic);

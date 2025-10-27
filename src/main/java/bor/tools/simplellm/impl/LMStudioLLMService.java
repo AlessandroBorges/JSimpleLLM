@@ -149,22 +149,25 @@ public class LMStudioLLMService extends OpenAILLMService {
 		// Common LM Studio model definitions - these are examples of models typically
 		// used
 		// Note: Actual available models depend on what user has loaded in LM Studio
-		Model qwen3_1_7b = new Model("qwen/qwen3-1.7b", "qwen3-1.7b", 32000, LANGUAGE, REASONING, TOOLS, CODING);
-		Model qwen3_4b    = new Model("qwen/qwen3-4b", "qwen3-4b", 32000, LANGUAGE, REASONING, TOOLS, CODING);
+		Model qwen3_1_7b = new Model("qwen/qwen3-1.7b", "qwen3-1.7b", 32000,
+		                             LANGUAGE, REASONING, TOOLS, CODING);
+		Model qwen3_4b    = new Model("qwen/qwen3-4b", "qwen3-4b", 32000, 
+		                              LANGUAGE, REASONING, TOOLS, CODING);
 		// models PHI
-		Model phi4_mini   = new Model("phi-4-mini-instruct", "phi4-mini", 32768, LANGUAGE, REASONING, REASONING_PROMPT, CODING);
-		Model phi3_5_mini = new Model("lmstudio-community/phi-3.5-mini-instruct", "phi3.5-mini", 128000, LANGUAGE);		
+		Model phi4_mini   = new Model("phi-4-mini-instruct", "phi4-mini", 32768, 
+		                              LANGUAGE, REASONING, REASONING_PROMPT, CODING);
+		Model phi3_5_mini = new Model("lmstudio-community/phi-3.5-mini-instruct", "phi3.5-mini", 128000,
+		                              LANGUAGE);		
 		// models GTP-OSS
-		Model gtp_oss_20b = new Model("openai/gpt-oss-20b", "gpt-oss", 32768, LANGUAGE, REASONING, TOOLS, CODING);
+		Model gtp_oss_20b = new Model("openai/gpt-oss-20b", "gpt-oss", 32768, 
+		                              LANGUAGE, REASONING, TOOLS, CODING);
 
 
 		// Vision models that might be available
 		Model llava_7b = new Model("llava-1.5-7b", "llava-7b", 8096, LANGUAGE, VISION);
 
-		// Embedding models (if user has loaded embedding models
-		// Embedding models (if user has loaded embedding models)
-    	Model nomic_embed = new ModelEmbedding("nomic-embed-text-v1.5", "nomic-embed", 8192, EMBEDDING, EMBEDDING_DIMENSION);
-		Model snowflake   = new ModelEmbedding("text-embedding-snowflake-arctic-embed-l-v2.0",
+		// Embedding models (if user has loaded embedding models		
+    	Model snowflake   = new ModelEmbedding("text-embedding-snowflake-arctic-embed-l-v2.0",
 		            "snowflake",
 		            8192,
 		            EMBEDDING,
@@ -180,8 +183,7 @@ public class LMStudioLLMService extends OpenAILLMService {
 
 		map.add(phi3_5_mini);
 		map.add(llava_7b);
-		map.add(nomic_embed);
-
+		
 		map.add(snowflake);
 		map.add(nomic);
 
