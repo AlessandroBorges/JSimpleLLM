@@ -2,6 +2,8 @@ package bor.tools.simplellm;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
 
 /**
  * A specialized map to manage Model objects, allowing retrieval by name or
@@ -29,6 +31,14 @@ public class MapModels extends LinkedHashMap<String, Model> {
 		super();
 	}
 
+	
+	private static String normalizeModelName(String modelName) {
+		if( modelName == null ) {
+			return null;
+		}
+		return modelName.toLowerCase().trim();
+	}
+	
 	/**
 	 * Adds a model to the map using its name as the key.
 	 * 
@@ -48,7 +58,71 @@ public class MapModels extends LinkedHashMap<String, Model> {
 		}
 		return m == null;
 	}
+	
+	/**
+	 * Adds a model to the map with a specified normalized name as the key.
+	 * 
+	 * @param modelNameAlias the name of the model
+	 * @param model               the model to add
+	 * @return true if the model was added, false if a model with the same name already exists
+	 */
+	public boolean addModel(String modelNameAlias, Model model) {
+		if( modelNameAlias == null || modelNameAlias.isEmpty() ) {
+			return false;
+		}
+		
+		if(this.containsKey(modelNameAlias)) {
+			// replace existing
+			put(modelNameAlias, model);
+			return false;
+		} else {
+			put(modelNameAlias, model);
+			return true;
+		}		
+	}
+	
+	/**
+	 * Checks if a model with the given name exists in the map.
+	 * 
+	 * @param modelName the model name to check
+	 * 
+	 * @return true if a model with the given name exists, false otherwise
+	 */ 
+	public boolean contains(String modelName) {
+		if (modelName == null || modelName.isEmpty()) {
+			return false;
+		}
+		// First check direct key
+		if (this.containsKey(modelName)) {
+			return true;
+		} else {
+			// Then check normalized key	
+			String normName = normalizeModelName(modelName);
+			return this.containsKey(normName);
+		}
+	}
 
+	/**
+	 * Puts a model into the map with the specified model name as the key.
+	 * If a model with the same normalized name already exists, it will not be added.
+	 * 
+	 * @param modelName the name of the model
+	 * @param model     the model to add
+	 * @return the previous model associated with the normalized name, or null if none existed
+	 **/
+	@Override
+	public Model put(String modelName, Model model) {
+		if( modelName == null || modelName.isEmpty() || model == null ) {
+			return null;
+		}
+		String normName = normalizeModelName(modelName);
+		if(this.containsKey(normName)) {
+			return null;
+		} else {
+			return super.put(modelName, model);			
+		}		
+	}
+	
 	/**
 	 * Returns a model by its alias (case insensitive).
 	 * 
@@ -67,6 +141,50 @@ public class MapModels extends LinkedHashMap<String, Model> {
 		}
 		return null;
 	}
+	
+	/**
+	 * Returns a model whose name partially matches the given string.
+	 * 
+	 * @param partialName the partial model name to search for
+	 * 
+	 * @return the model if a match is found, null otherwise
+	 **/
+	public Model getByPartialMatch(String partialName) {
+		if (partialName == null || partialName.isEmpty()) {
+			return null;
+		}
+		String normPartial = normalizeModelName(partialName);
+		
+		Set<String> keys = this.keySet();
+		SortedSet<String> sortedKeys = new java.util.TreeSet<String>(comparatorLengthDesc);
+		sortedKeys.addAll(keys);
+		
+		// add aliases too
+		for(Model m : values()) {			
+			String alias = m.getAlias();
+			if(alias != null  ) {
+			   sortedKeys.add(alias);
+			}
+		}
+		
+		for (String key : sortedKeys) {
+			String normKey = normalizeModelName(key);
+			if (normKey.contains(normPartial)) {
+				return getModel(key);
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Comparator to sort strings by length in descending order.
+	 */
+	private static java.util.Comparator<String> comparatorLengthDesc = new java.util.Comparator<String>() {
+		@Override
+		public int compare(String s1, String s2) {
+			return Integer.compare(s2.length(), s1.length());
+		}		
+	};
 
 	/**
 	 * Returns a model by its name or alias.
@@ -135,5 +253,7 @@ public class MapModels extends LinkedHashMap<String, Model> {
 	public List<Model> getModels() { // TODO Auto-generated method stub
 	  	return List.copyOf(values());
 	}
+
+	
 
 }

@@ -40,6 +40,7 @@ public class OllamaLLMService extends LMStudioLLMService {
 	private static final LLMConfig defaultLLMConfig;
 
 	private static final String DEFAULT_MODEL = "qwen3-1.7b";
+	private static final String DEFAULT_EMBEDDING_MODEL = "Definity/snowflake-arctic-embed-l-v2.0-q8_0";
 
 	static {
 		MapModels map = new MapModels();
@@ -68,6 +69,8 @@ public class OllamaLLMService extends LMStudioLLMService {
 		            .apiToken("ollama") // Default API key for Ollama
 		            .baseUrl("http://localhost:11434/v1/")
 		            .registeredModelMap(map)
+		            .defaultModelName(DEFAULT_MODEL)
+		            .defaultEmbeddingModelName(DEFAULT_EMBEDDING_MODEL)
 		            .build();
 	}
 	
@@ -97,7 +100,9 @@ public class OllamaLLMService extends LMStudioLLMService {
 	 *
 	 * @return the default LLMConfig instance for Ollama
 	 */
-	public static LLMConfig getDefaultLLMConfig() { return defaultLLMConfig; }
+	public static LLMConfig getDefaultLLMConfig() { 
+		return defaultLLMConfig.clone(); 
+	}
 
 	/**
 	 * Default constructor for OllamaLLMService.

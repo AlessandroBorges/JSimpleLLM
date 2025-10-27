@@ -302,5 +302,26 @@ public class LLMServiceFactory {
 		return new PerplexityLLMService();
 	}
 
+	/**
+	 * Get default LLMConfig	
+	 * @param provider - the LLM service provider
+	 * @return
+	 */
+	public static LLMConfig getDefaultLLMConfig(SERVICE_PROVIDER provider) {
+		
+		switch (provider) {
+		case OPENAI:
+			return OpenAILLMService.getDefaultLLMConfig();
+		case OLLAMA:
+			return OllamaLLMService.getDefaultLLMConfig();
+		case LM_STUDIO:
+			return LMStudioLLMService.getDefaultLLMConfig();
+		case PERPLEXITY:
+			return PerplexityLLMService.getDefaultLLMConfig();
+		default:
+			throw new IllegalArgumentException("Unsupported LLM service provider: " + provider);
+		}
+	}
+
 	// Futuras implementações: createClaude(), createGemini(), etc.
 }

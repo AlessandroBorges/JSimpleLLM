@@ -221,5 +221,28 @@ public class LLMConfig {
 		merged.putAll(params);
 		return merged;
 	}
+	
+	/**
+	 * Creates a deep copy of this LLMConfig instance.
+	 * <p>
+	 * This method constructs a new LLMConfig object with the same values as the
+	 * current instance, ensuring that mutable fields are also cloned to prevent
+	 * shared references.
+	 * </p>
+	 * 
+	 * @return a new LLMConfig instance that is a deep copy of this instance
+	 */
+	public LLMConfig clone() {
+		return LLMConfig.builder()
+				.baseUrl(this.baseUrl)
+				.apiToken(this.apiToken)
+				.apiTokenEnvironment(this.apiTokenEnvironment)
+				.additionalProperties(new LinkedHashMap<>(this.additionalProperties))
+				.registeredModelMap(this.registeredModelMap)
+				.defaultModelName(this.defaultModelName)
+				.defaultEmbeddingModelName(this.defaultEmbeddingModelName)
+				.defaultParams(this.defaultParams==null ? null : new MapParam(this.defaultParams))
+				.build();
+	}
 }
 // LLMConfig

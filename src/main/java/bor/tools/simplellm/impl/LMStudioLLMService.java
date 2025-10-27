@@ -138,9 +138,10 @@ public class LMStudioLLMService extends OpenAILLMService {
 	protected static final MapModels defaultModelMap;
 	protected static final LLMConfig defaultLLMConfig;
 	
-	protected static final String[] REASONING_MODELS = {"qwen3", "gpt-oss", "lfm2","gemma"};
+	protected static final String[] REASONING_MODELS = {"qwen3", "gpt-oss", "gemma"};
 
 	protected static final String DEFAULT_MODEL_NAME = "qwen3-1.7b";
+	protected static final String DEFAULT_EMBEDDING_MODEL_NAME = "snowflake";
 
 	static {
 		MapModels map = new MapModels();
@@ -192,6 +193,8 @@ public class LMStudioLLMService extends OpenAILLMService {
 		            .apiToken("lm-studio") // Default API key for LM Studio
 		            .baseUrl("http://localhost:1234/v1/")
 		            .registeredModelMap (defaultModelMap)
+		            .defaultEmbeddingModelName(DEFAULT_EMBEDDING_MODEL_NAME)
+		            .defaultModelName(DEFAULT_MODEL_NAME)
 		            .build();
 	}
 
@@ -204,9 +207,11 @@ public class LMStudioLLMService extends OpenAILLMService {
 	 * and settings optimized for LM Studio's local LLM server.
 	 * </p>
 	 *
-	 * @return the default LLMConfig instance for LM Studio
+	 * @return a clone of default LLMConfig instance for LM Studio
 	 */
-	public static LLMConfig getDefaultLLMConfig() { return defaultLLMConfig; }
+	public static LLMConfig getDefaultLLMConfig() { 
+		return defaultLLMConfig.clone(); 
+	}
 
 	/**
 	 * Default constructor for LMStudioLLMService.

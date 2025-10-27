@@ -91,6 +91,7 @@ public class OpenAILLMService implements LLMService {
 	                        + "Don't try to make up an answer.";
 
 	private static final String DEFAULT_MODEL = "gpt-4.1-mini";
+	private static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small";
 
 	private static final LLMConfig defaultLLMConfig;
 
@@ -180,9 +181,11 @@ public class OpenAILLMService implements LLMService {
 		map.add(gpt4_vison);	
 
 		defaultLLMConfig = LLMConfig.builder()
-		            .apiTokenEnvironment("OPENAI_API_KEY")
+		            .apiTokenEnvironment("OPENAI_API_KEY")		            
 		            .baseUrl("https://api.openai.com/v1/")
 		            .registeredModelMap(map)
+		            .defaultEmbeddingModelName(DEFAULT_EMBEDDING_MODEL)
+		            .defaultModelName(DEFAULT_MODEL)	 
 		            .build();
 	}
 
@@ -240,7 +243,9 @@ public class OpenAILLMService implements LLMService {
 	 *
 	 * @return the default LLMConfig instance for OpenAI
 	 */
-	public static LLMConfig getDefaultLLMConfig() { return defaultLLMConfig; }
+	public static LLMConfig getDefaultLLMConfig() { 
+		return defaultLLMConfig.clone(); 
+	}
 
 	/**
 	 * Core HTTP POST method for making requests to OpenAI API.

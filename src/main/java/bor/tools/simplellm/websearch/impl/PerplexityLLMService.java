@@ -203,7 +203,7 @@ public class PerplexityLLMService implements LLMService, WebSearch {
      * @return default LLMConfig
      */
     public static LLMConfig getDefaultLLMConfig() {
-        return defaultLLMConfig;
+        return defaultLLMConfig.clone();
     }
 
     /**
