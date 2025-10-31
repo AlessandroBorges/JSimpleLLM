@@ -63,17 +63,19 @@ public class OpenAIJsonMapper {
 	 * @throws LLMException if message conversion fails (e.g., image processing)
 	 */
 	public Map<String, Object> toChatCompletionRequest(Chat chat, String query, MapParam params) throws LLMException {
+		
 		Map<String, Object> request = new HashMap<>();
-
-		Object modelObj = params.getModel();
+		String modelName = params.getModel();
 		// Set model
-		modelObj = modelObj != null ? modelObj : chat.getModel();
-		if (modelObj == null) {
+		if(modelName == null) {
+			modelName = chat.getModel();
+		}		
+		if (modelName == null) {
 			throw new IllegalArgumentException("Model must be specified for chat completion request");
 		}
-		request.put("model", modelObj);
-	
-		
+				
+		request.put("model", modelName);
+
 		// Convert messages
 		List<Map<String, Object>> messages = new ArrayList<>();
 
@@ -98,9 +100,9 @@ public class OpenAIJsonMapper {
 			for (Map.Entry<String, Object> entry : params.entrySet()) {
 				String key   = entry.getKey();
 				Object value = entry.getValue();
-                 if (value==null) 
-                	 continue;
-                 
+				if (value == null)
+					continue;
+				 
 				// Map common parameter names
 				switch (key.toLowerCase()) {
 					case "temperature":
@@ -109,22 +111,39 @@ public class OpenAIJsonMapper {
 					case "frequency_penalty":
 					case "presence_penalty":
 					case "stop":
-					case "stream":						
+					case "stream":
 						request.put(key, value);
 						break;
+						
+					case "model_obj":
+						// skip this one
+						break;
+						
 					default:
 						// Include other parameters as-is
+						if (key.equalsIgnoreCase("reasoning_effort") && value instanceof Reasoning_Effort) {
+							value = ((Reasoning_Effort) value).toString().toLowerCase();
+						}
 						request.put(key, value);
 						break;
 				}
 			}
 		}
 		// Order properties for readability
-		request = orderProperty(request, "model", "reasoning_effort", "messages", "temperature", "max_tokens", "top_p",
-		            "frequency_penalty", "presence_penalty", "stop", "stream");
+		request = orderProperty(request,
+		                        "model",
+		                        "reasoning_effort",
+		                        "messages",
+		                        "temperature",
+		                        "max_tokens",
+		                        "top_p",
+		                        "frequency_penalty",
+		                        "presence_penalty",
+		                        "stop",
+		                        "stream");
 		return request;
 	}
-	
+
 	/**
 	 * Orders the properties of a Map according to the specified key order.
 	 * Keys not in the order list are appended at the end in their original order.
@@ -135,20 +154,19 @@ public class OpenAIJsonMapper {
 	 * @return a new LinkedHashMap with properties ordered
 	 */
 	protected LinkedHashMap<String, Object> orderProperty(Map<String, Object> source, String... keysOrder) {
-	    LinkedHashMap<String, Object> copy = new LinkedHashMap<>();
-	    for (String key : keysOrder) {
-	        if (source.containsKey(key)) {
-	            copy.put(key, source.remove(key));
-	        }
-	    }
-	    // copy remaining entries in original order
-	    for (Map.Entry<String, Object> entry : source.entrySet()) {
-	        copy.put(entry.getKey(), entry.getValue());
-	    }
-	    return copy;
+		LinkedHashMap<String, Object> copy = new LinkedHashMap<>();
+		for (String key : keysOrder) {
+			if (source.containsKey(key)) {
+				copy.put(key, source.remove(key));
+			}
+		}
+		// copy remaining entries in original order
+		for (Map.Entry<String, Object> entry : source.entrySet()) {
+			copy.put(entry.getKey(), entry.getValue());
+		}
+		return copy;
 	}
 
-	
 	/**
 	 * Converts a Completion (non-chat) object and parameters into an OpenAI
 	 * completion request payload.<br>
@@ -174,7 +192,7 @@ public class OpenAIJsonMapper {
 		String fullPrompt = prompt
 		            + "\n\n"
 		            + (query != null ? query.trim() : "");
-		
+
 		request.put("prompt", fullPrompt.trim());
 
 		// Add parameters from MapParam
@@ -305,13 +323,13 @@ public class OpenAIJsonMapper {
 					if (content != null) {
 						response.setResponse(new ContentWrapper(ContentType.TEXT, content));
 					}
-					if(delta.get("reasoning") != null || delta.get("reasoning_content") != null) {
-					  String reasoning = (String) delta.get("reasoning");	
-					  if(reasoning==null) {
-						  reasoning = (String) delta.get("reasoning_content");
-					  }
-					  response.setReasoningContent(reasoning);
-					}					
+					if (delta.get("reasoning") != null || delta.get("reasoning_content") != null) {
+						String reasoning = (String) delta.get("reasoning");
+						if (reasoning == null) {
+							reasoning = (String) delta.get("reasoning_content");
+						}
+						response.setReasoningContent(reasoning);
+					}
 				}
 
 				String finishReason = (String) firstChoice.get("finish_reason");
@@ -337,19 +355,21 @@ public class OpenAIJsonMapper {
 	 * @param input      the text to embed
 	 * @param model      the embedding model
 	 * @param dimensions optional dimension parameter
+	 * @param encodingFormat optional encoding format (e.g., "base64")
 	 * 
-	 * @return request payload Map
+	 * @return request payload Map for requesting embeddings
 	 */
-	public Map<String, Object> toEmbeddingsRequest(String input,
-	                                               Model model,
-	                                               Integer dimensions,
-	                                               String encodingFormat) {
+	public Map<String, Object> toEmbeddingsRequest(String input, 
+	                                               Model model, 
+	                                               Integer dimensions, 
+	                                               String encodingFormat) 
+	{
 		Map<String, Object> request = new HashMap<>();
 		request.put("input", input);
 		if (model == null) {
 			throw new IllegalArgumentException("Model must be specified for embeddings request");
 		}
-		request.put("model", model.toString());
+		request.put("model", model.getName());
 
 		if (dimensions != null) {
 			request.put("dimensions", dimensions);
@@ -364,7 +384,7 @@ public class OpenAIJsonMapper {
 	public Map<String, Model> fromModelsRequest(Map<String, Object> response) throws LLMException {
 		Map<String, Model> models = new HashMap<>();
 		try {
-			
+
 			Object dataObj = response.get("data");
 			if (dataObj == null || !(dataObj instanceof List)) {
 				throw new LLMException("No model data found in response", null);
@@ -373,35 +393,35 @@ public class OpenAIJsonMapper {
 			List<Map<String, Object>> data = (List<Map<String, Object>>) dataObj;
 			if (data != null && !data.isEmpty()) {
 				for (Map<String, Object> modelData : data) {
-					String   id            = (String) modelData.get("id");
-					if(id==null || id.isEmpty()) {
-					  id = (String) modelData.get("name");
+					String id = (String) modelData.get("id");
+					if (id == null || id.isEmpty()) {
+						id = (String) modelData.get("name");
 					}
 					if (id == null || id.isEmpty()) {
 						continue;
 					}
-					Integer  contextLength = null;
+					Integer contextLength = null;
 					if (modelData.containsKey("context_length")) {
 						contextLength = (Integer) modelData.get("context_length");
 					} else if (modelData.containsKey("max_context_length")) {
 						contextLength = (Integer) modelData.get("max_context_length");
-					}					
-					List<Model_Type> types = new ArrayList<>();					
-					String idLower = id.toLowerCase();
-					types.add(id.contains("embed") ? Model_Type.EMBEDDING :Model_Type.LANGUAGE);					
+					}
+					List<Model_Type> types   = new ArrayList<>();
+					String           idLower = id.toLowerCase();
+					types.add(id.contains("embed") ? Model_Type.EMBEDDING : Model_Type.LANGUAGE);
 					if (id.toLowerCase().contains("code") || id.toLowerCase().contains("wizard")) {
 						types.add(Model_Type.CODING);
 					} else if (id.toLowerCase().contains("vision") || id.toLowerCase().contains("image")
-					        || id.toLowerCase().contains("dalle")) {
-						types.add( Model_Type.VISION);
+					           || id.toLowerCase().contains("dalle")) {
+						types.add(Model_Type.VISION);
 					} else if (id.toLowerCase().contains("fast") || id.toLowerCase().contains("mini")
-								|| idLower.contains("nano") ) {
+					           || idLower.contains("nano")) {
 						types.add(Model_Type.FAST);
 					} else if (id.toLowerCase().contains("reason") || id.toLowerCase().contains("gpt-4o-r")
-					        || id.toLowerCase().contains("gemini-1.5")) {
+					           || id.toLowerCase().contains("gemini-1.5")) {
 						types.add(Model_Type.REASONING);
 					}
-					
+
 					Model model = new Model(id, contextLength, types.toArray(new Model_Type[1]));
 					models.put(id, model);
 				}
@@ -411,9 +431,9 @@ public class OpenAIJsonMapper {
 			            + e.getMessage(), e);
 		}
 		return models;
-		
+
 	}
-	
+
 	/**
 	 * Converts an OpenAI embeddings response to a float array.
 	 * 
@@ -464,9 +484,9 @@ public class OpenAIJsonMapper {
 					System.arraycopy(vec, 0, temp, 0, Math.min(vec.length, vecSize));
 					vec = temp;
 				}
-				// Normalize to unit 
-                vec = Utils.normalize(vec);
-                return vec;
+				// Normalize to unit
+				vec = Utils.normalize(vec);
+				return vec;
 			} else {
 				throw new LLMException("No embedding data found in response", null);
 			}
@@ -956,23 +976,19 @@ public class OpenAIJsonMapper {
 	public String toJson(Map<String, Object> data) throws LLMException {
 		// some object MUST be converted to string, using toString()
 		// before serializing to JSON
-	    Class<?>[] toStringJson = { 
-	                             Model.class,
-	                             Reasoning_Effort.class,
-	                             Enum.class		            
-		}; 
-		for(Map.Entry<String, Object> entry : data.entrySet()) {
-			if(entry.getValue() != null) {
-				for(Class<?> cls : toStringJson) {
-					if(cls.isAssignableFrom(entry.getValue().getClass())) {
+		Class<?>[] toStringJson = { Model.class, Reasoning_Effort.class, Enum.class };
+		for (Map.Entry<String, Object> entry : data.entrySet()) {
+			if (entry.getValue() != null) {
+				for (Class<?> cls : toStringJson) {
+					if (cls.isAssignableFrom(entry.getValue().getClass())) {
 						entry.setValue(entry.getValue().toString());
 						break;
 					}
 				}
-			}			
+			}
 		}
-		
-		try {				
+
+		try {
 			return objectMapper.writeValueAsString(data);
 		} catch (JsonProcessingException e) {
 			throw new LLMException("Failed to convert to JSON: "

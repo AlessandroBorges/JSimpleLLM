@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import bor.tools.simplellm.ModelEmbedding.Embeddings_Op;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.chat.ContentWrapper;
 import bor.tools.simplellm.exceptions.LLMException;

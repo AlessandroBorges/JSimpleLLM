@@ -38,7 +38,8 @@ public class SearchMetadataExample {
      * Example 1: Basic web search with SearchMetadata
      * Shows how search metadata is automatically attached to assistant messages.
      */
-    public static void example1_BasicSearchMetadata() throws Exception {
+    @SuppressWarnings("unused")
+	public static void example1_BasicSearchMetadata() throws Exception {
         System.out.println("=== Example 1: Basic Search with Metadata ===\n");
 
         // Create Perplexity service

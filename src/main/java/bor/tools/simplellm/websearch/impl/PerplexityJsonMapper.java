@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import bor.tools.simplellm.MapParam;
+import bor.tools.simplellm.Model;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.chat.ContentType;
 import bor.tools.simplellm.chat.ContentWrapper;
@@ -80,15 +81,23 @@ public class PerplexityJsonMapper {
      * @throws LLMException if message conversion fails
      */
     public Map<String, Object> toChatCompletionRequest(Chat chat, String query, MapParam params) throws LLMException {
-        Map<String, Object> request = new HashMap<>();
+        
+    	Map<String, Object> request = new HashMap<>();
+    	if(params == null) {
+    		params = new MapParam();
+    	}
 
-        // Get model
-        Object modelObj = params != null ? params.getModel() : null;
-        modelObj = modelObj != null ? modelObj : (chat != null ? chat.getModel() : null);
-        if (modelObj == null) {
+        // Get model name        
+        String modelName = params.getModel();
+        if(modelName == null && chat != null) {        	
+        	modelName = chat.getModel();        	
+		}       
+       
+        if (modelName == null) {
             throw new IllegalArgumentException("Model must be specified for chat completion request");
         }
-        request.put("model", modelObj.toString());
+        
+        request.put("model", modelName);
 
         // Convert messages
         List<Map<String, Object>> messages = new ArrayList<>();

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import bor.tools.simplellm.ContextManager;
 import bor.tools.simplellm.MapParam;
+import bor.tools.simplellm.Model;
 import bor.tools.simplellm.ToolsConfig;
 import bor.tools.simplellm.Utils;
 import lombok.Data;
@@ -115,19 +116,34 @@ public class Chat {
 	
 	
 	/**
-	 * Returns the language model used for this chat session.
+	 * Returns the language model name used for this chat session.
 	 * <p>
 	 * If the {@code model} field is set, it is returned. Otherwise, if {@code mapParam}
 	 * contains a model entry, that value is returned. Returns {@code null} if no model is set.
 	 * </p>
 	 * @return the model object or {@code null} if not set
 	 */
-	public Object getModel() {
-		if (this.model != null) {
-			return this.model;
+	public String getModel() {
+		if(this.model instanceof Model) {
+			return ((Model)this.model).getName();
 		}
-		if (this.mapParam != null && this.mapParam.containsKey(MapParam.MODEL)) {
-			return this.mapParam.get(MapParam.MODEL);
+		if(this.model instanceof String) {
+			return (String)this.model;
+		}
+		// search in mapParam
+		if (mapParam != null && mapParam.containsKey(MapParam.MODEL)) {
+			return mapParam.getModel();
+		}
+		return null;
+	}
+	
+	/**
+	 * Returns the model as a Model object if applicable.
+	 * @return
+	 */
+	public Model getModelObj() {
+		if(this.model instanceof Model) {
+			return (Model)this.model;
 		}
 		return null;
 	}

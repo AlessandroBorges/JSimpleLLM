@@ -254,6 +254,17 @@ public class MapModels extends LinkedHashMap<String, Model> {
 	  	return List.copyOf(values());
 	}
 
-	
+	/**
+	 * Creates a shallow copy of this MapModels.
+	 * 
+	 * @return a new MapModels instance containing the same entries as this one
+	 */
+	public MapModels clone() {
+		MapModels copy = new MapModels();
+		for( String key : this.keySet() ) {
+			copy.put(key, this.get(key));
+		}
+		return copy;
+	}
 
 }

@@ -55,6 +55,7 @@ import bor.tools.simplellm.exceptions.LLMException;
  */
 public class LMStudioLLMService extends OpenAILLMService {
 
+
 	protected static final String PROMPT_REASONING = 
 			  "Você é um assistente de IA que usa Chain-of-Thought (CoT) para racionalizar suas respostas. \n"
 			  + "Use o seguinte formato para estruturar seu raciocínio: \n"
@@ -167,12 +168,12 @@ public class LMStudioLLMService extends OpenAILLMService {
 		Model llava_7b = new Model("llava-1.5-7b", "llava-7b", 8096, LANGUAGE, VISION);
 
 		// Embedding models (if user has loaded embedding models		
-    	Model snowflake   = new ModelEmbedding("text-embedding-snowflake-arctic-embed-l-v2.0",
+		ModelEmbedding snowflake   = new ModelEmbedding("text-embedding-snowflake-arctic-embed-l-v2.0",
 		            "snowflake",
 		            8192,
 		            EMBEDDING,
 		            EMBEDDING_DIMENSION);
-		Model nomic     =
+		ModelEmbedding nomic     =
 		            new ModelEmbedding("text-embedding-nomic-embed-text-v1.5@q8_0", "nomic", 8192, EMBEDDING, EMBEDDING_DIMENSION);
 
 		// Add models to map
@@ -200,7 +201,7 @@ public class LMStudioLLMService extends OpenAILLMService {
 		            .build();
 	}
 
-
+	
 	/**
 	 * Retrieves the default LLM configuration for LM Studio services.
 	 * <p>
@@ -369,20 +370,28 @@ public class LMStudioLLMService extends OpenAILLMService {
 	 * If no model is specified, use a default LM Studio model if available.
 	 */
 	@Override
-	protected Model resolveModel(MapParam params) throws LLMException {
-		var modelObj = params.getModel();
-		Model model = modelObj!=null ? 
-					 ((modelObj instanceof Model)? (Model)modelObj : getLLMConfig().getModel(modelObj.toString())) 
-					 : null;
+	protected Model resolveModel(MapParam params) throws LLMException {		
+		Model model = params.getModelObj();
 		if(model!=null)
 			return model;
 		
+		String modelName = params.getModel();
+		
+		if(model==null) {
+			if(modelName!=null && modelName.isEmpty()==false) {
+				model = getLLMConfig().getModel(modelName);
+				if(model!=null) {
+					params.modelObj(model);
+				}
+			}
+		}
+		// not found yet! Try default model
 		if (model == null) {
 			// try default model
 			logger.debug("No model specified, using default model: " + getDefaultModelName());
-			model = config.getModel(getDefaultModelName());
+			model = getLLMConfig().getModel(getDefaultModelName());
 			if(model!=null) {
-				params.model(model);
+				params.modelObj(model);
 			}
 		}
 		if(model==null) {
@@ -503,7 +512,7 @@ public class LMStudioLLMService extends OpenAILLMService {
 		if(model==null) {
 			throw new LLMException("No model specified and no default model available");
 		}
-		if(isModelOnline(model)==false) {
+		if(isModelOnline(model)==false) { // @TODO - fazer cache de status dos modelos
 			throw new LLMException("LM Studio service only supports installed models. "
 						+ "Model " + model.getName() + " is offline.");
 		}
@@ -598,7 +607,8 @@ public class LMStudioLLMService extends OpenAILLMService {
 		if(!model.isTypeReasoning()) {			
 			params.reasoningEffort(null);
 		}
-		
+		// Ensure model name is set in params
+		params.model(model.getName());
 		// Create request payload
 		Map<String, Object> payload = jsonMapper.toCompletionRequest(prompt, query, params);
 

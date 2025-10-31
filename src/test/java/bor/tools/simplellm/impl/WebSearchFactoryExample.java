@@ -6,13 +6,11 @@ import bor.tools.simplellm.LLMServiceFactory;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.ResponseStream;
 import bor.tools.simplellm.chat.Chat;
-import bor.tools.simplellm.chat.ContentType;
 import bor.tools.simplellm.exceptions.LLMException;
 import bor.tools.simplellm.websearch.SearchResponse;
 import bor.tools.simplellm.websearch.WebSearch;
 import bor.tools.simplellm.websearch.WebSearchFactory;
 import bor.tools.simplellm.websearch.WebSearchFactory.WEBSEARCH_PROVIDER;
-import bor.tools.simplellm.websearch.impl.PerplexityLLMService;
 
 /**
  * Comprehensive examples demonstrating WebSearchFactory usage.
@@ -322,7 +320,7 @@ public class WebSearchFactoryExample {
         System.out.println("Current implementation:");
         try {
             WebSearch perplexity = WebSearchFactory.createPerplexity();
-            System.out.println("  ✓ Perplexity: Available");
+            System.out.println("  ✓ Perplexity: Available -  " + perplexity.getClass().getSimpleName());
         } catch (Exception e) {
             System.out.println("  ✗ Perplexity: " + e.getMessage());
         }

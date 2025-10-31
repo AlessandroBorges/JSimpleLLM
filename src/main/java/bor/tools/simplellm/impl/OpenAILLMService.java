@@ -17,6 +17,7 @@ import static bor.tools.simplellm.Model_Type.TOOLS;
 import static bor.tools.simplellm.Model_Type.VISION;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,13 +31,13 @@ import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
 
 import bor.tools.simplellm.CompletionResponse;
+import bor.tools.simplellm.Embeddings_Op;
 import bor.tools.simplellm.LLMConfig;
 import bor.tools.simplellm.LLMService;
 import bor.tools.simplellm.MapModels;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model;
 import bor.tools.simplellm.ModelEmbedding;
-import bor.tools.simplellm.ModelEmbedding.Embeddings_Op;
 import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.ResponseStream;
 import bor.tools.simplellm.SERVICE_PROVIDER;
@@ -83,6 +84,10 @@ import okhttp3.ResponseBody;
  */
 public class OpenAILLMService implements LLMService {
 
+	private static final String MODELS_ENDPOINT = "/models";
+
+	private static final int CACHE_EXPIRES_MINUTES = 10;
+	
 	Logger logger = LoggerFactory.getLogger(OpenAILLMService.class.getName());
 
 	protected static final String DEFAULT_PROMPT =
@@ -198,6 +203,17 @@ public class OpenAILLMService implements LLMService {
 	protected final StreamingUtil    streamingUtil;
 	protected static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
 
+	/**
+	 * Cache of installed models to avoid repeated API calls.
+	 */
+	private MapModels installedModelsCache = new MapModels();
+	
+	/** Locks the cache in refresh */
+	private final Object cacheLock = new Object();
+	
+	/** Timestamp of last installed models fetch */
+    private LocalDateTime lastInstalledModelsFetch = null;
+	
 	private static final String PROMPT_SUMMARY = null;
 
 	/**
@@ -338,11 +354,11 @@ public class OpenAILLMService implements LLMService {
 	 * 
 	 * @return Map of model names to Model objects
 	 * @throws LLMException
-	 */
-	public MapModels getInstalledModels() throws LLMException {
+	 */	
+	protected MapModels loadInstalledModels() throws LLMException {
 		try {
-			var map = getRequest("/models");			
-			var models = jsonMapper.fromModelsRequest(map);	
+			var       map       = getRequest(MODELS_ENDPOINT);
+			var       models    = jsonMapper.fromModelsRequest(map);
 			MapModels installed = new MapModels();
 			installed.putAll(models);
 			return installed;
@@ -352,6 +368,36 @@ public class OpenAILLMService implements LLMService {
 			throw new LLMException("Unexpected error retrieving models: "
 			            + e.getMessage(), e);
 		}
+	}
+	
+	/**
+	 * Get cached map of installed models.
+	 * @return cached installed models (clone).
+	 * @throws LLMException
+	 */
+	public MapModels getInstalledModels() throws LLMException {
+		if (installedModelsCache==null 
+			|| installedModelsCache.isEmpty() 
+			|| lastInstalledModelsFetch == null
+		    || lastInstalledModelsFetch.plusMinutes(CACHE_EXPIRES_MINUTES).isAfter(LocalDateTime.now())) 
+		{ // refresh
+			try {
+				synchronized(cacheLock) {
+					 if (installedModelsCache == null) {
+		                    installedModelsCache = new MapModels();
+		                } else 
+		                	installedModelsCache.clear();
+					MapModels newData = loadInstalledModels();
+					installedModelsCache.putAll(newData);
+					newData.clear();
+				}				
+				lastInstalledModelsFetch = LocalDateTime.now();
+			} catch (LLMException e) {
+				logger.warn("Failed to retrieve installed models from LM Studio: "
+				            + e.getMessage());
+			}
+		}
+		return installedModelsCache.clone();
 	}
 	
 	/**
@@ -478,6 +524,7 @@ public class OpenAILLMService implements LLMService {
 		if (texto == null || texto.trim().isEmpty()) {
 			throw new LLMException("Text cannot be null or empty");
 		}
+		
 		if(params==null || params.isEmpty()) {
 		  throw new LLMException("params cannot be null or empty");
 		}		
@@ -488,8 +535,10 @@ public class OpenAILLMService implements LLMService {
         	if(modelObj==null)
         		throw new LLMException("Model must be specified in parameters for embeddings.");
 		}
-        
-        Model model = (Model) getLLMConfig().getModel(modelObj.toString());
+        // @TODO fix the modelObj - it may fail if modelObj is not a String
+        var model =  modelObj instanceof ModelEmbedding ? 
+        			  			  (ModelEmbedding) modelObj 
+        			  			: getLLMConfig().getModel(modelObj.toString());
         
 		// Use default model if not specified
 		if (model == null || model.toString().trim().isEmpty()) {
@@ -514,13 +563,11 @@ public class OpenAILLMService implements LLMService {
 			encodingFormat = "base64";
 		}
 
-		try {
-			if (model instanceof ModelEmbedding) {
-				ModelEmbedding me = (ModelEmbedding) model;
-				texto = me.applyOperationPrefix(op, texto);
-			} else {
-				logger.warn("Model {} is not a ModelEmbedding instance", model);
+		try {		
+			if(model instanceof ModelEmbedding me) {
+				texto = me.applyOperationPrefix(op, texto);	
 			}
+			
 
 			// Create request payload
 			Map<String, Object> payload = jsonMapper.toEmbeddingsRequest(texto.trim(), model, dimensions, encodingFormat);
@@ -770,6 +817,7 @@ public class OpenAILLMService implements LLMService {
 		if(params.isStream()==Boolean.TRUE) {
 			params.stream(null); // ensureStreaming is disabled
 		}
+		
 		// Create request payload
 		Map<String, Object> payload = jsonMapper.toChatCompletionRequest(chat, query, checkedParams);
 
@@ -837,7 +885,7 @@ public class OpenAILLMService implements LLMService {
 		
 		// Ensure model is properly set
 		Model model = resolveModel(params);
-		params.model(model);
+		params.modelObj(model);
 		
 		if(chat!=null && chat.getModel()==null) {
 			chat.setModel(model);
@@ -858,12 +906,14 @@ public class OpenAILLMService implements LLMService {
 	 * 
 	 * @return the resolved model name
 	 */
-	protected Model resolveModel(MapParam params) throws LLMException {
-		Object modelObj = params.getModel();
-		if (modelObj instanceof Model)
-			return (Model) modelObj;
+	protected Model resolveModel(MapParam params) throws LLMException {		
+		Model model = params.getModelObj();		
+		if (model != null) {
+			return model;		
+		}
 		else {
-			String modelName = modelObj != null ? modelObj.toString() : getDefaultModelName();
+			String modelObj = params.getModel();
+			String modelName = modelObj != null ? modelObj : getDefaultModelName();
 			Model  m         = getLLMConfig().getModel(modelName);
 			if (m == null) {
 				logger.warn("Model {} not found in configuration, using default model {}",
@@ -1088,24 +1138,33 @@ public class OpenAILLMService implements LLMService {
 	protected MapParam checkParams(Chat chat, MapParam params) throws LLMException {	
 		params = fixParams(params, chat);	
 		
-		Object modelObj = params.getModel();
-		if(modelObj == null) {
-			modelObj = getLLMConfig().getDefaultModelName();
-		}
+		Model model = params.getModelObj();
+		String modelName = params.getModel();
 		
-		Model model = modelObj instanceof Model ? (Model) modelObj 
-					 : getLLMConfig().getModel(modelObj.toString());
-			
+		if(modelName == null) {
+			if(model==null) {
+				// try chat's model then default model name
+				modelName = chat.getModel()!=null? chat.getModel() : getLLMConfig().getDefaultModelName();
+			}
+			else
+				modelName = model.getName();
+		}		
+		if(model==null)	{
+			model = getLLMConfig().getModel(modelName);
+			if(model==null) {
+				throw new LLMException("Model "+modelName+" not found in configuration.");
+			}
+			// model can be found by aliases, lets make sure we use the formal name
+			modelName = model.getName();
+		}	
 		if(this.isModelOnline(model)==false) {
 			throw new LLMException("Model "+model.getName()+" is not available online.");
-		}
+		}	
 		
-		if(model==null) {
-			throw new LLMException("Model "+modelObj+" not found in configuration.");
-		}
+		//String modelName = model.getName();		
 		// Create parameters copy and enable streaming
 		MapParam checkedParams = new MapParam(params);		
-			
+		checkedParams.model(modelName);	
 		// apply reasoning effort if model supports it
 		if(model.isTypeReasoning() && params.getReasoningEffort()!=null) {
 			checkedParams.reasoningEffort(params.getReasoningEffort()); 

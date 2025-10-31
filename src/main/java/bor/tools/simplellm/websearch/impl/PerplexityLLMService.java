@@ -15,12 +15,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import bor.tools.simplellm.CompletionResponse;
+import bor.tools.simplellm.Embeddings_Op;
 import bor.tools.simplellm.LLMConfig;
 import bor.tools.simplellm.LLMService;
 import bor.tools.simplellm.MapModels;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model;
-import bor.tools.simplellm.ModelEmbedding.Embeddings_Op;
 import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.ResponseStream;
 import bor.tools.simplellm.SERVICE_PROVIDER;

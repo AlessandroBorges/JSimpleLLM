@@ -8,8 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import bor.tools.simplellm.Embeddings_Op;
 import bor.tools.simplellm.MapParam;
-import bor.tools.simplellm.ModelEmbedding.Embeddings_Op;
 import bor.tools.simplellm.exceptions.LLMException;
 
 /**

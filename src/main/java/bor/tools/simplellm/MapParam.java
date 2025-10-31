@@ -31,6 +31,7 @@ public class MapParam extends LinkedHashMap<String, Object> {
 
 	public static final String TEMPERATURE        = "temperature";
 	public static final String MODEL              = "model";
+	public static final String MODEL_OBJ              = "model_obj";
 	public static final String MAX_CONTENT_TOKENS = "max_content_tokens";
 	public static final String MAX_TOKENS         = "max_tokens";
 	public static final String DIMENSIONS         = "dimensions";
@@ -164,11 +165,14 @@ public class MapParam extends LinkedHashMap<String, Object> {
 	 * 
 	 * @return this
 	 */
-	public MapParam model(Model model) {
-		if (model == null)
-			super.remove(MODEL);
-		else
-			put(MODEL, model);
+	public MapParam modelObj(Model model) {
+		if (model == null) {
+			super.remove(MODEL_OBJ);
+		}
+		else {
+			put(MODEL_OBJ, model);
+			put(MODEL, model.getName());
+		}
 		return this;
 	}
 
@@ -209,12 +213,35 @@ public class MapParam extends LinkedHashMap<String, Object> {
 	}
 
 	/**
-	 * Returns model if set, otherwise null.
+	 * Returns model name if set, otherwise null.
 	 * 
 	 * @return model
 	 */
-	public Object getModel() { return get(MODEL); }
+	public String getModel() {
+		// check model object first
+		if(containsKey(MODEL_OBJ)) {
+			Object v = get(MODEL_OBJ);
+			if(v instanceof Model) {
+				return ((Model)v).getName();
+			} 
+		}
+		var v = get(MODEL);
+		return v==null?null:v.toString(); 
+	}
 
+	/**
+	 * Returns model object if set, otherwise null.
+	 * 
+	 * @return model object
+	 */
+	public Model getModelObj() {
+		Object v = get(MODEL_OBJ);
+		if(v instanceof Model) {
+			return (Model)v;
+		} 
+		return null; 
+	}
+	
 	/**
 	 * Replace a key with a new key, preserving the value.
 	 * 
