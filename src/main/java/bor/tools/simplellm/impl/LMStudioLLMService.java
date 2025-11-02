@@ -171,10 +171,15 @@ public class LMStudioLLMService extends OpenAILLMService {
 		ModelEmbedding snowflake   = new ModelEmbedding("text-embedding-snowflake-arctic-embed-l-v2.0",
 		            "snowflake",
 		            8192,
+		            1024,
 		            EMBEDDING,
 		            EMBEDDING_DIMENSION);
+		
 		ModelEmbedding nomic     =
-		            new ModelEmbedding("text-embedding-nomic-embed-text-v1.5@q8_0", "nomic", 8192, EMBEDDING, EMBEDDING_DIMENSION);
+		            new ModelEmbedding("text-embedding-nomic-embed-text-v1.5@q8_0", "nomic",
+		                               8192,
+		                               768,
+		                               EMBEDDING, EMBEDDING_DIMENSION);
 
 		// Add models to map
 		map.add(qwen3_1_7b);

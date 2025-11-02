@@ -65,12 +65,12 @@ public class Model {
 	 * in a single request, including both input and output tokens.
 	 * </p>
 	 * <p>
-	 * Common values include 4096, 8192, 16384, 32768, or larger depending
+	 * Common values include 512, 2048, 4096, 8192, 16384, 32768, or larger depending
 	 * on the model's capabilities.
 	 * </p>
 	 */
 	@Default 
-	Integer contextLength = 4096;
+	Integer contextLength = 2048;
 
 	public Model() {
 		this.types = new ArrayList<>();

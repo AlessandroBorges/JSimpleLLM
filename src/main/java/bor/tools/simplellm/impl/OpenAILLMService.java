@@ -104,10 +104,25 @@ public class OpenAILLMService implements LLMService {
 		MapModels map = new MapModels();
 
 		Model text_emb_3_small =
-		            new ModelEmbedding("text-embedding-3-small", "3-small", 8000, EMBEDDING, EMBEDDING_DIMENSION, BATCH);
+		            new ModelEmbedding("text-embedding-3-small",
+		                               "3-small", 
+		                               8000, 
+		                               3072,
+		                               EMBEDDING, EMBEDDING_DIMENSION, BATCH);
+		
 		Model text_emb_3_large =
-		            new ModelEmbedding("text-embedding-3-large", "3-large", 8000, EMBEDDING, EMBEDDING_DIMENSION, BATCH);
-		Model text_emb_2_ADA   = new ModelEmbedding("text-embedding-ada-002", "ada-002", 8000, EMBEDDING, BATCH);
+		            new ModelEmbedding("text-embedding-3-large",
+		                               "3-large", 
+		                               8000,
+		                               3072
+		                               ,
+		                               EMBEDDING, EMBEDDING_DIMENSION, BATCH);
+		
+		Model text_emb_2_ADA   = new ModelEmbedding("text-embedding-ada-002",
+		                                            "ada-002", 
+		                                            8000, 
+		                                            1536,
+		                                            EMBEDDING, BATCH);
 
 		Model gpt_5_nano  = new Model("gpt-5-nano",
 		            400000,
@@ -529,7 +544,7 @@ public class OpenAILLMService implements LLMService {
 		  throw new LLMException("params cannot be null or empty");
 		}		
 		
-        Object modelObj = params.getModel();
+        Object modelObj = params.getModelObj();
         if(modelObj==null) {
         	modelObj = getLLMConfig().getDefaultEmbeddingModelName();
         	if(modelObj==null)
@@ -541,7 +556,7 @@ public class OpenAILLMService implements LLMService {
         			  			: getLLMConfig().getModel(modelObj.toString());
         
 		// Use default model if not specified
-		if (model == null || model.toString().trim().isEmpty()) {
+		if (model == null || model.getName().trim().isEmpty()) {
 			throw new LLMException("Model must be specified in parameters for embeddings.");
 		}
 
@@ -587,7 +602,20 @@ public class OpenAILLMService implements LLMService {
 			            + e.getMessage(), e);
 		}
 	}
-
+	
+	
+	/**
+	 * 
+	 */
+	/*
+	@Override
+	public List<float[]> embeddings(Embeddings_Op op, String[] texto, MapParam params) throws LLMException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+   */
+	
+	
 	/**
 	 * {@inheritDoc}
 	 * <p>
@@ -971,8 +999,11 @@ public class OpenAILLMService implements LLMService {
 	 * <p>
 	 * Uses OpenAI's tokenization to count tokens, ensuring accurate counting
 	 * for the specified model's tokenizer.<br>
-	 * Default model is gpt-3.5 and uses older cl100k_base<br>
+	 * 
 	 * Use "gpt-5" for modern tokenization, using o200k_base encoding.
+	 * Other popular model is "gpt-3.5", which uses and uses older cl100k_base<br>
+	 * 
+	 * if model is null or "fast" a rough estimate is returned. 	
 	 * 
 	 * </p>
 	 */
@@ -981,13 +1012,16 @@ public class OpenAILLMService implements LLMService {
 		if (text == null) {
 			return 0;
 		}
-
-		// Normalize line endings
-		text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\n\n", "\n");
-
+		
+		if(model==null 
+			|| model.trim().isEmpty() 
+			|| "fast".equalsIgnoreCase(model.trim())) {		
+		    return Math.round(((float)text.length())/4.2f); // rough estimate
+		}
+		
 		// Use default model if not specified
 		if (model == null || model.trim().isEmpty()) {
-			model = "gpt-3.5";
+			model = "gpt-5";
 		}
 		model = model.trim().toLowerCase();
 			
@@ -1412,5 +1446,6 @@ public class OpenAILLMService implements LLMService {
 	public SERVICE_PROVIDER getServiceProvider() {		
 		return SERVICE_PROVIDER.OPENAI;
 	}
+
 
 }

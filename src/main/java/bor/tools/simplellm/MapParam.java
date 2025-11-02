@@ -199,7 +199,9 @@ public class MapParam extends LinkedHashMap<String, Object> {
 	 * 
 	 * @return dimension
 	 */
-	public Integer getDimension() { return getAsInteger(DIMENSIONS); }
+	public Integer getDimension() { 
+		return getAsInteger(DIMENSIONS); 
+	}
 
 	/**
 	 * Returns max_tokens if set, otherwise max_content_tokens.

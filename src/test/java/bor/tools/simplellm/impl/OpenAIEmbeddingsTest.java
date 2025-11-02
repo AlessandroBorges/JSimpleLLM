@@ -176,7 +176,7 @@ class OpenAIEmbeddingsTest extends OpenAILLMServiceTestBase {
 		param.model("text-embedding-3-small");
 		// When & Then
 		assertThrows(LLMException.class,
-		             () -> { llmService.embeddings(Embeddings_Op.DOCUMENT,null, param); },
+		             () -> { llmService.embeddings(Embeddings_Op.DOCUMENT,(String) null, param); },
 		             "Should throw exception for null text");
 	}
 

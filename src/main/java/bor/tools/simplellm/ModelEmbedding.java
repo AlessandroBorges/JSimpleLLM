@@ -10,14 +10,16 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * Spcialized model for embeddings
+ * Specialized model for embeddings
  */
 @Getter
 @Setter
 public class ModelEmbedding extends Model {
 	@SuppressWarnings("unused")
 	private static final long serialVersionUID = 1L;
-
+	
+	private static final String DEFAULT_EMBEDDING_PREFIX = "%s";
+	
 	/**
 	 * Record to hold operation and its corresponding prefix.
 	 * 
@@ -72,17 +74,28 @@ public class ModelEmbedding extends Model {
 		bge_OperationPrefixs = List.of(
 		                               new EmbedOperation_Prefix(Embeddings_Op.QUERY,
 		                                           "Represente esta frase para buscar passagens relevantes: %s"),
-		                               new EmbedOperation_Prefix(Embeddings_Op.DOCUMENT, "%s"),
-		                               new EmbedOperation_Prefix(Embeddings_Op.DEFAULT, "%s"));
+		                               new EmbedOperation_Prefix(Embeddings_Op.DOCUMENT, DEFAULT_EMBEDDING_PREFIX),
+		                               new EmbedOperation_Prefix(Embeddings_Op.DEFAULT, DEFAULT_EMBEDDING_PREFIX));
 	}
 
 	/**
 	 * Map of operation types to their corresponding prompt prefixes.
 	 */
 	protected Map<Embeddings_Op, String> operationPrefixs;
+	
+   	/**
+	 * The dimensionality of the embeddings produced by this model.
+	 * <p>
+	 * This value indicates the size of the vector space in which the text
+	 * embeddings are represented. Common dimensions include 128, 256, 512, 768,
+	 * 1024, 2048, or higher depending on the model's architecture and training.
+	 * </p>
+	 */
+	private int embeddingDimension = 1024;
+		
 
 	/**
-	 * 
+	 * Constructor
 	 */
 	public ModelEmbedding() {
 		super();
@@ -90,12 +103,14 @@ public class ModelEmbedding extends Model {
 	}
 
 	/**
+	 * Parameterized constructor for creating an embedding model with specified properties.
 	 * @param name
 	 * @param contextLength
 	 * @param model_types
 	 */
-	public ModelEmbedding(String name, Integer contextLength, Model_Type... model_types) {
+	public ModelEmbedding(String name, Integer contextLength, Integer dimensions, Model_Type... model_types) {
 		super(name, contextLength, model_types);
+		this.embeddingDimension = dimensions;
 		this.checkEmbeddingSet();
 	}
 
@@ -142,8 +157,20 @@ public class ModelEmbedding extends Model {
 	 * @param contextLength
 	 * @param model_types
 	 */
-	public ModelEmbedding(String name, String alias, Integer contextLength, Model_Type... model_types) {
+	public ModelEmbedding(String name, String alias, Integer contextLength, Integer dimensions,Model_Type... model_types) {
 		super(name, alias, contextLength, model_types);
+		this.embeddingDimension = dimensions;
+	}
+	
+	
+	/**
+	 * Check if this model is EMBEDDING_DIMENSION type.<br>
+	 * It means you can reduce or increase the embedding dimensions (Matrioshka).
+	 * 
+	 * @return true if this model supports EMBEDDING_DIMENSION type, false otherwise
+	 */
+	public boolean isEmbeddingDimensionable() {
+		return this.isType(Model_Type.EMBEDDING_DIMENSION);
 	}
 
 	/**
@@ -170,6 +197,20 @@ public class ModelEmbedding extends Model {
 		return operationPrefixs.getOrDefault(op, operationPrefixs.getOrDefault(Embeddings_Op.DEFAULT, ""));
 	}
 
+	/**
+	 * Apply the operation-specific prefix to the given text.
+	 * <p>
+	 * This method prepends the appropriate prompt prefix for the specified
+	 * {@code Embeddings_Op} to the provided text. If the prefix contains a
+	 * placeholder
+	 * ("%s"), it formats the text accordingly.
+	 * </p>
+	 * 
+	 * @param op   the embedding operation type
+	 * @param text the original text to which the prefix will be applied
+	 * 
+	 * @return the text with the operation-specific prefix applied
+	 */
 	public String applyOperationPrefix(Embeddings_Op op, String text) {
 		String prefix = getPrefixForOperation(op);
 
@@ -184,6 +225,16 @@ public class ModelEmbedding extends Model {
 		return text;
 	}
 
+	/**
+	 * Create a clone of this ModelEmbedding instance.
+	 * <p>
+	 * This method creates a new instance of {@code ModelEmbedding} and copies all
+	 * properties from the current instance to the new one.
+	 * </p>
+	 * 
+	 * @return a new {@code ModelEmbedding} instance with the same properties as
+	 *         this one
+	 */
 	public ModelEmbedding clone() {
 		ModelEmbedding copy = new ModelEmbedding();
 		copy.name = this.name;

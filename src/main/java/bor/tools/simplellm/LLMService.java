@@ -184,6 +184,30 @@ public interface LLMService {
 	float[] embeddings(Embeddings_Op op, String texto, MapParam params) throws LLMException;
 
 	/**
+	 * Generates embeddings for an array of texts using the specified model and
+	 * operation.
+	 * 
+	 * @param op - Embedding operations 
+	 * @param texto - array of texts to embed
+	 * @param params additional parameters such as model name, vector size, etc.
+	 * 
+	 * @return a list of normalized float arrays representing the text embeddings
+	 * 
+	 * @throws LLMException
+	 */
+	default List<float[]> embeddings(Embeddings_Op op, String[] texto, MapParam params) throws LLMException{
+		List<float[]> embeddingsList = new java.util.ArrayList<>();
+		if (texto != null) {
+			for (String text : texto) {
+				float[] embedding = embeddings(op, text, params);
+				embeddingsList.add(embedding);
+			}
+		}
+		return embeddingsList;
+	}
+	
+	// ================== COMPLETION METHODS ==================
+	/**
 	 * Performs a simple text completion using the specified system prompt and user
 	 * query.
 	 * <p>
