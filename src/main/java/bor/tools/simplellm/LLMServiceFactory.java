@@ -37,7 +37,7 @@ import bor.tools.simplellm.websearch.impl.PerplexityLLMService;
  * 
  * @since 1.0
  * 
- * @see LLMService
+ * @see LLMProvider
  * @see LLMConfig
  * @see OpenAILLMService
  */
@@ -48,9 +48,9 @@ public class LLMServiceFactory {
 	 * @param provider  - the LLM service provider to use
 	 * @param config - (optional) the LLM configuration containing API settings, model definitions, API authentication details, and service endpoints
      *
-	 * @return a new {@link LLMService} instance configured for the specified provider
+	 * @return a new {@link LLMProvider} instance configured for the specified provider
 	 */
-	public static LLMService createLLMService(SERVICE_PROVIDER provider, LLMConfig config) {
+	public static LLMProvider createLLMService(SERVICE_PROVIDER provider, LLMConfig config) {
 		if (provider == null) {
 			throw new IllegalArgumentException("Provider must not be null");
 		}
@@ -104,17 +104,17 @@ public class LLMServiceFactory {
 	 *               definitions,
 	 *               authentication details, and service endpoints
 	 * 
-	 * @return a new {@link LLMService} instance configured for OpenAI API
+	 * @return a new {@link LLMProvider} instance configured for OpenAI API
 	 *         compatibility
 	 * 
 	 * @throws IllegalArgumentException if the provided config is null or contains
 	 *                                  invalid configuration parameters
 	 * 
-	 * @see LLMService
+	 * @see LLMProvider
 	 * @see LLMConfig
 	 * @see OpenAILLMService
 	 */
-	public static LLMService createOpenAI(LLMConfig config) {
+	public static LLMProvider createOpenAI(LLMConfig config) {
 		return new OpenAILLMService(config);
 	}
 
@@ -137,16 +137,16 @@ public class LLMServiceFactory {
 	 * @param config the LLM configuration containing Ollama API settings, model
 	 *               definitions, and service endpoints
 	 * 
-	 * @return a new {@link LLMService} instance configured for Ollama local server
+	 * @return a new {@link LLMProvider} instance configured for Ollama local server
 	 * 
 	 * @throws IllegalArgumentException if the provided config is null or contains
 	 *                                  invalid configuration parameters
 	 * 
-	 * @see LLMService
+	 * @see LLMProvider
 	 * @see LLMConfig
 	 * @see OllamaLLMService
 	 */
-	public static LLMService createOllama(LLMConfig config) {
+	public static LLMProvider createOllama(LLMConfig config) {
 		return new OllamaLLMService(config);
 	}
 
@@ -157,12 +157,12 @@ public class LLMServiceFactory {
 	 * settings suitable for most local Ollama installations.
 	 * </p>
 	 * 
-	 * @return a new {@link LLMService} instance with default Ollama configuration
+	 * @return a new {@link LLMProvider} instance with default Ollama configuration
 	 * 
 	 * @see #createOllama(LLMConfig)
 	 * @see OllamaLLMService#getDefaultOllamaLLMConfig()
 	 */
-	public static LLMService createOllama() {
+	public static LLMProvider createOllama() {
 		return new OllamaLLMService();
 	}
 
@@ -185,16 +185,16 @@ public class LLMServiceFactory {
 	 * @param config the LLM configuration containing LM Studio API settings, model
 	 *               definitions, and service endpoints
 	 * 
-	 * @return a new {@link LLMService} instance configured for LM Studio local server
+	 * @return a new {@link LLMProvider} instance configured for LM Studio local server
 	 * 
 	 * @throws IllegalArgumentException if the provided config is null or contains
 	 *                                  invalid configuration parameters
 	 * 
-	 * @see LLMService
+	 * @see LLMProvider
 	 * @see LLMConfig
 	 * @see LMStudioLLMService
 	 */
-	public static LLMService createLMStudio(LLMConfig config) {
+	public static LLMProvider createLMStudio(LLMConfig config) {
 		return new LMStudioLLMService(config);
 	}
 
@@ -205,12 +205,12 @@ public class LLMServiceFactory {
 	 * settings suitable for most local LM Studio installations.
 	 * </p>
 	 * 
-	 * @return a new {@link LLMService} instance with default LM Studio configuration
+	 * @return a new {@link LLMProvider} instance with default LM Studio configuration
 	 * 
 	 * @see #createLMStudio(LLMConfig)
 	 * @see LMStudioLLMService#getDefaultLLMConfig()
 	 */
-	public static LLMService createLMStudio() {
+	public static LLMProvider createLMStudio() {
 		return new LMStudioLLMService();
 	}
 
@@ -245,7 +245,7 @@ public class LLMServiceFactory {
 	 * <b>Example usage:</b>
 	 * </p>
 	 * <pre>{@code
-	 * LLMService service = LLMServiceFactory.createPerplexity();
+	 * LLMProvider service = LLMServiceFactory.createPerplexity();
 	 *
 	 * // Use as WebSearch
 	 * if (service instanceof WebSearch) {
@@ -270,18 +270,18 @@ public class LLMServiceFactory {
 	 * @param config the LLM configuration containing Perplexity API settings, model
 	 *               definitions, and service endpoints
 	 *
-	 * @return a new {@link LLMService} instance configured for Perplexity AI with web search
+	 * @return a new {@link LLMProvider} instance configured for Perplexity AI with web search
 	 *
 	 * @throws IllegalArgumentException if the provided config is null or contains
 	 *                                  invalid configuration parameters
 	 *
-	 * @see LLMService
+	 * @see LLMProvider
 	 * @see WebSearch
 	 * @see SearchResponse
 	 * @see LLMConfig
 	 * @see PerplexityLLMService
 	 */
-	public static LLMService createPerplexity(LLMConfig config) {
+	public static LLMProvider createPerplexity(LLMConfig config) {
 		return new PerplexityLLMService(config);
 	}
 
@@ -293,12 +293,12 @@ public class LLMServiceFactory {
 	 * environment variable.
 	 * </p>
 	 *
-	 * @return a new {@link LLMService} instance with default Perplexity configuration
+	 * @return a new {@link LLMProvider} instance with default Perplexity configuration
 	 *
 	 * @see #createPerplexity(LLMConfig)
 	 * @see PerplexityLLMService#getDefaultLLMConfig()
 	 */
-	public static LLMService createPerplexity() {
+	public static LLMProvider createPerplexity() {
 		return new PerplexityLLMService();
 	}
 

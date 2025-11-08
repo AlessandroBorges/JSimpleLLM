@@ -11,7 +11,7 @@ import bor.tools.simplellm.ModelEmbedding;
 import bor.tools.simplellm.SERVICE_PROVIDER;
 
 /**
- * Implementation of the LLMService interface for Ollama's local Large Language
+ * Implementation of the LLMProvider interface for Ollama's local Large Language
  * Model server.
  * <p>
  * This class extends OpenAILLMService and adapts it to work with Ollama's API

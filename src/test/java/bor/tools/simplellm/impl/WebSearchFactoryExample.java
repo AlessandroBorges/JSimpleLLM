@@ -1,7 +1,7 @@
 package bor.tools.simplellm.impl;
 
 import bor.tools.simplellm.LLMConfig;
-import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.LLMProvider;
 import bor.tools.simplellm.LLMServiceFactory;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.ResponseStream;
@@ -81,10 +81,10 @@ public class WebSearchFactoryExample {
 
         // OLD WAY - Via LLMServiceFactory (requires cast)
         System.out.println("Old approach (LLMServiceFactory):");
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
         WebSearch searchOld = (WebSearch) service;  // Cast required
         System.out.println("  - Requires cast to WebSearch");
-        System.out.println("  - Returns LLMService interface");
+        System.out.println("  - Returns LLMProvider interface");
         System.out.println("  - Less semantic clarity");
 
         // NEW WAY - Via WebSearchFactory (direct)

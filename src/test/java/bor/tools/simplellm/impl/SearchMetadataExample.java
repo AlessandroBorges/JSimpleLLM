@@ -1,6 +1,6 @@
 package bor.tools.simplellm.impl;
 
-import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.LLMProvider;
 import bor.tools.simplellm.LLMServiceFactory;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.chat.Chat;
@@ -43,7 +43,7 @@ public class SearchMetadataExample {
         System.out.println("=== Example 1: Basic Search with Metadata ===\n");
 
         // Create Perplexity service
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
         WebSearch searchService = (WebSearch) service;
 
         // Create a chat
@@ -94,7 +94,7 @@ public class SearchMetadataExample {
     public static void example2_ConversationalSearchWithHistory() throws Exception {
         System.out.println("=== Example 2: Conversational Search with History ===\n");
 
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
         WebSearch searchService = (WebSearch) service;
 
         Chat chat = new Chat();
@@ -134,7 +134,7 @@ public class SearchMetadataExample {
     public static void example3_AccessingSearchResults() throws Exception {
         System.out.println("=== Example 3: Detailed Search Results ===\n");
 
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
         WebSearch searchService = (WebSearch) service;
 
         Chat chat = new Chat();

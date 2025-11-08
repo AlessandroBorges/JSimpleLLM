@@ -5,7 +5,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
-import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.LLMProvider;
 import lombok.Data;
 
 /**
@@ -54,7 +54,7 @@ public class ChatManager {
 	/**
 	 * A reference to the LLM service, providing context for chat interactions.
 	 */
-	private LLMService llmService; // Reference to LLM service for context
+	private LLMProvider llmService; // Reference to LLM service for context
 	/**
 	 * The timeout, in milliseconds, for marking a chat as inactive.
 	 */

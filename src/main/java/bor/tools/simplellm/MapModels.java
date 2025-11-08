@@ -31,7 +31,12 @@ public class MapModels extends LinkedHashMap<String, Model> {
 		super();
 	}
 
-	
+	/**
+	 * Normalizes a model name by converting it to lowercase and trimming whitespace.
+	 * 
+	 * @param modelName the model name to normalize
+	 * @return the normalized model name
+	 */
 	private static String normalizeModelName(String modelName) {
 		if( modelName == null ) {
 			return null;
@@ -149,7 +154,7 @@ public class MapModels extends LinkedHashMap<String, Model> {
 	 * 
 	 * @return the model if a match is found, null otherwise
 	 **/
-	public Model getByPartialMatch(String partialName) {
+	public Model getBestMatchName(String partialName) {
 		if (partialName == null || partialName.isEmpty()) {
 			return null;
 		}
@@ -218,7 +223,6 @@ public class MapModels extends LinkedHashMap<String, Model> {
 	 * 
 	 * @return true if a model with the given name or alias exists, false otherwise
 	 */
-
 	public boolean containsName(String name) {
 		boolean res = containsKey(name);
 		if (res == false) {

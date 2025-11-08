@@ -1,6 +1,6 @@
 package bor.tools.simplellm.websearch;
 
-import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.LLMProvider;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.ResponseStream;
@@ -22,7 +22,7 @@ import bor.tools.simplellm.exceptions.LLMException;
  * <b>Example usage:</b>
  * </p>
  * <pre>{@code
- * LLMService service = LLMServiceFactory.createPerplexity();
+ * LLMProvider service = LLMServiceFactory.createPerplexity();
  * if (service instanceof WebSearch) {
  *     WebSearch searchService = (WebSearch) service;
  *
@@ -45,7 +45,7 @@ import bor.tools.simplellm.exceptions.LLMException;
  * @author AlessandroBorges
  * @since 1.1
  *
- * @see LLMService
+ * @see LLMProvider
  * @see SearchResponse
  * @see MapParam
  */
@@ -207,7 +207,7 @@ public interface WebSearch {
      * Helper method to check if a model supports a specific type.
      * <p>
      * This method should be implemented to delegate to the underlying
-     * {@link LLMService} implementation.
+     * {@link LLMProvider} implementation.
      * </p>
      *
      * @param modelName the model name
@@ -215,7 +215,7 @@ public interface WebSearch {
      * @return true if model supports the type, false otherwise
      *
      * @see Model_Type
-     * @see LLMService#isModelType(String, Model_Type)
+     * @see LLMProvider#isModelType(String, Model_Type)
      */
     boolean isModelType(String modelName, Model_Type type);
 }

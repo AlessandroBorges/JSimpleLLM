@@ -12,7 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import bor.tools.simplellm.LLMConfig;
-import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.LLMProvider;
 import bor.tools.simplellm.Model;
 import bor.tools.simplellm.exceptions.LLMAuthenticationException;
 import bor.tools.simplellm.exceptions.LLMException;
@@ -53,7 +53,7 @@ class OpenAIConfigTest extends OpenAILLMServiceTestBase {
 		            .build();
 
 		// When
-		LLMService service = new OpenAILLMService(customConfig);
+		LLMProvider service = new OpenAILLMService(customConfig);
 
 		// Then
 		assertNotNull(service, "Service should be created");
@@ -112,7 +112,7 @@ class OpenAIConfigTest extends OpenAILLMServiceTestBase {
 	@DisplayName("Test authentication with invalid token")
 	void testInvalidAuthentication() {
 		// Given
-		LLMService invalidService = createServiceWithCustomConfig("https://api.openai.com/v1/", "invalid-token");
+		LLMProvider invalidService = createServiceWithCustomConfig("https://api.openai.com/v1/", "invalid-token");
 
 		// When & Then
 		assertThrows(LLMAuthenticationException.class,
@@ -124,7 +124,7 @@ class OpenAIConfigTest extends OpenAILLMServiceTestBase {
 	@DisplayName("Test service with missing token")
 	void testMissingToken() {
 		// Given - create service with empty token
-		LLMService serviceWithoutToken = createServiceWithCustomConfig("https://api.openai.com/v1/", "");
+		LLMProvider serviceWithoutToken = createServiceWithCustomConfig("https://api.openai.com/v1/", "");
 
 		// When & Then
 		assertThrows(LLMAuthenticationException.class,
@@ -137,7 +137,7 @@ class OpenAIConfigTest extends OpenAILLMServiceTestBase {
 	void testCustomBaseUrl() {
 		// Given
 		String     customUrl     = "https://custom-openai-endpoint.com/v1/";
-		LLMService customService = createServiceWithCustomConfig(customUrl, "test-token");
+		LLMProvider customService = createServiceWithCustomConfig(customUrl, "test-token");
 
 		// Then
 		assertEquals(customUrl, customService.getLLMConfig().getBaseUrl(), "Should use custom base URL");

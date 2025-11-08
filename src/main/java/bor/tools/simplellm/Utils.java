@@ -146,6 +146,31 @@ public class Utils {
 	}
 
 	/**
+	 * Normaliza e redimensiona o vetor para newSize.<br>
+	 * Se o vetor for maior que newSize, ele é truncado.<br>
+	 * Se for menor, é preenchido com zeros.
+	 * 
+	 * @param vector  vetor de comprimento N
+	 * @param newSize novo tamanho do vetor
+	 * 
+	 * @return vetor normalizado e redimensionado
+	 */
+	public static float[] normalizeAndResize(float[] vector, int newSize) {
+		// no need to resize
+		if (vector.length == newSize) {
+			return normalize(vector);			
+		}
+		
+		vector = normalize(vector);
+
+		int     len           = vector.length;
+		float[] resizedVector = new float[newSize];
+		System.arraycopy(vector, 0, resizedVector, 0, Math.min(len, newSize));
+		
+		return normalize(resizedVector);
+	}
+	
+	/**
 	 * Normaliza o vetor "inplace", isto é, o mesmo vetor de input é o que retorna.
 	 * 
 	 * @param vector vetor de comprimento N

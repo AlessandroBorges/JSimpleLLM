@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.LLMProvider;
 import bor.tools.simplellm.MapParam;
 import lombok.Data;
 
@@ -179,7 +179,7 @@ public class Message {
 	 * @return
 	 */
 	@JsonIgnore
-	public int countTokens(LLMService service) {
+	public int countTokens(LLMProvider service) {
 		if (this.usage != null) {
 			Object obj = this.usage.get("token_count");
 			if (obj instanceof Integer) {

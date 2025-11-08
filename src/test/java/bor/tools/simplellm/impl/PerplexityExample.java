@@ -1,6 +1,6 @@
 package bor.tools.simplellm.impl;
 
-import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.LLMProvider;
 import bor.tools.simplellm.LLMServiceFactory;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.ResponseStream;
@@ -37,7 +37,7 @@ public class PerplexityExample {
 
         try {
             // Create Perplexity service
-            LLMService service = LLMServiceFactory.createPerplexity();
+            LLMProvider service = LLMServiceFactory.createPerplexity();
             WebSearch searchService = (WebSearch) service;
 
             // Simple search query
@@ -74,7 +74,7 @@ public class PerplexityExample {
         System.out.println("\n=== Example 2: Domain Filtering ===\n");
 
         try {
-            LLMService service = LLMServiceFactory.createPerplexity();
+            LLMProvider service = LLMServiceFactory.createPerplexity();
             WebSearch searchService = (WebSearch) service;
 
             // Search only on academic domains
@@ -119,7 +119,7 @@ public class PerplexityExample {
         System.out.println("\n=== Example 3: Recency Filter & Related Questions ===\n");
 
         try {
-            LLMService service = LLMServiceFactory.createPerplexity();
+            LLMProvider service = LLMServiceFactory.createPerplexity();
             WebSearch searchService = (WebSearch) service;
 
             // Search recent content and get related questions
@@ -165,7 +165,7 @@ public class PerplexityExample {
         System.out.println("\n=== Example 4: Conversational Search ===\n");
 
         try {
-            LLMService service = LLMServiceFactory.createPerplexity();
+            LLMProvider service = LLMServiceFactory.createPerplexity();
             WebSearch searchService = (WebSearch) service;
 
             // Create chat session
@@ -214,7 +214,7 @@ public class PerplexityExample {
         System.out.println("\n=== Example 5: Streaming Search ===\n");
 
         try {
-            LLMService service = LLMServiceFactory.createPerplexity();
+            LLMProvider service = LLMServiceFactory.createPerplexity();
             WebSearch searchService = (WebSearch) service;
 
             // Create streaming handler
@@ -269,7 +269,7 @@ public class PerplexityExample {
         System.out.println("\n=== Example 6: Deep Research ===\n");
 
         try {
-            LLMService service = LLMServiceFactory.createPerplexity();
+            LLMProvider service = LLMServiceFactory.createPerplexity();
             WebSearch searchService = (WebSearch) service;
 
             MapParam params = new MapParam()

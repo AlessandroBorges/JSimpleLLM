@@ -28,7 +28,7 @@ import bor.tools.simplellm.chat.MessageRole;
 import bor.tools.simplellm.exceptions.LLMException;
 
 /**
- * Implementation of the LLMService interface for LM Studio's local Large
+ * Implementation of the LLMProvider interface for LM Studio's local Large
  * Language Model server.
  * <p>
  * This class extends OpenAILLMService and adapts it to work with LM Studio's

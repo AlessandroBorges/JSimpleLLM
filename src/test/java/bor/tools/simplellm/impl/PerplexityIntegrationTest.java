@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import bor.tools.simplellm.CompletionResponse;
 import bor.tools.simplellm.Embeddings_Op;
 import bor.tools.simplellm.LLMConfig;
-import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.LLMProvider;
 import bor.tools.simplellm.LLMServiceFactory;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model;
@@ -55,7 +55,7 @@ public class PerplexityIntegrationTest {
      */
     @Test
     public void testCreatePerplexityService() {
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
 
         assertNotNull(service, "Service should not be null");
         assertEquals(SERVICE_PROVIDER.PERPLEXITY, service.getServiceProvider(),
@@ -68,7 +68,7 @@ public class PerplexityIntegrationTest {
      */
     @Test
     public void testDefaultConfiguration() {
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
         LLMConfig config = service.getLLMConfig();
 
         assertNotNull(config, "Config should not be null");
@@ -84,7 +84,7 @@ public class PerplexityIntegrationTest {
      */
     @Test
     public void testRegisteredModels() throws LLMException {
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
         var models = service.getRegisteredModels();
 
         assertNotNull(models, "Models map should not be null");
@@ -116,7 +116,7 @@ public class PerplexityIntegrationTest {
      */
     @Test
     public void testWebSearchInterface() {
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
         assertTrue(service instanceof WebSearch, "Service should implement WebSearch");
 
         WebSearch searchService = (WebSearch) service;
@@ -138,7 +138,7 @@ public class PerplexityIntegrationTest {
         assumeTrue(apiKey != null && !apiKey.isEmpty(),
                 "Skipping test: PERPLEXITY_API_KEY not set");
 
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
 
         MapParam params = new MapParam()
                 .model("sonar")
@@ -170,7 +170,7 @@ public class PerplexityIntegrationTest {
         assumeTrue(apiKey != null && !apiKey.isEmpty(),
                 "Skipping test: PERPLEXITY_API_KEY not set");
 
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
         WebSearch searchService = (WebSearch) service;
 
         MapParam params = new MapParam()
@@ -207,7 +207,7 @@ public class PerplexityIntegrationTest {
         assumeTrue(apiKey != null && !apiKey.isEmpty(),
                 "Skipping test: PERPLEXITY_API_KEY not set");
 
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
         WebSearch searchService = (WebSearch) service;
 
         MapParam params = new MapParam()
@@ -243,7 +243,7 @@ public class PerplexityIntegrationTest {
         assumeTrue(apiKey != null && !apiKey.isEmpty(),
                 "Skipping test: PERPLEXITY_API_KEY not set");
 
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
         WebSearch searchService = (WebSearch) service;
 
         Chat chat = new Chat();
@@ -290,7 +290,7 @@ public class PerplexityIntegrationTest {
         assumeTrue(apiKey != null && !apiKey.isEmpty(),
                 "Skipping test: PERPLEXITY_API_KEY not set");
 
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
         WebSearch searchService = (WebSearch) service;
 
         MapParam params = new MapParam()
@@ -323,7 +323,7 @@ public class PerplexityIntegrationTest {
     @Test
     public void testTokenCount() {
         try {
-            LLMService service = LLMServiceFactory.createPerplexity();
+            LLMProvider service = LLMServiceFactory.createPerplexity();
 
             String text = "The quick brown fox jumps over the lazy dog";
             int tokenCount = service.tokenCount(text, null);
@@ -344,7 +344,7 @@ public class PerplexityIntegrationTest {
      */
     @Test
     public void testUnsupportedOperations() {
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
         MapParam params = new MapParam();
 
         // Embeddings not supported

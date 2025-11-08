@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import org.junit.jupiter.api.BeforeEach;
 
 import bor.tools.simplellm.LLMConfig;
-import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.LLMProvider;
 
 /**
  * Base class for OpenAI LLM Service tests.
@@ -18,7 +18,7 @@ import bor.tools.simplellm.LLMService;
  */
 public abstract class OpenAILLMServiceTestBase {
 
-	protected LLMService llmService;
+	protected LLMProvider llmService;
 	protected LLMConfig  config;
 
 	@BeforeEach
@@ -36,7 +36,7 @@ public abstract class OpenAILLMServiceTestBase {
 	/**
 	 * Helper method to create a service with custom configuration for testing.
 	 */
-	protected LLMService createServiceWithCustomConfig(String baseUrl, String apiToken) {
+	protected LLMProvider createServiceWithCustomConfig(String baseUrl, String apiToken) {
 		LLMConfig customConfig = LLMConfig.builder()
 		            .baseUrl(baseUrl)
 		            .apiToken(apiToken)

@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import org.junit.jupiter.api.BeforeEach;
 
 import bor.tools.simplellm.LLMConfig;
-import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.LLMProvider;
 
 /**
  * Base class for Ollama LLM Service tests.
@@ -17,7 +17,7 @@ import bor.tools.simplellm.LLMService;
  */
 public abstract class OllamaLLMServiceTestBase {
 
-	protected LLMService llmService;
+	protected LLMProvider llmService;
 	protected LLMConfig  config;
 
 	@BeforeEach
@@ -35,7 +35,7 @@ public abstract class OllamaLLMServiceTestBase {
 	/**
 	 * Helper method to create a service with custom configuration for testing.
 	 */
-	protected LLMService createServiceWithCustomConfig(String baseUrl, String apiKey) {
+	protected LLMProvider createServiceWithCustomConfig(String baseUrl, String apiKey) {
 		LLMConfig customConfig = LLMConfig.builder()
 		            .baseUrl(baseUrl)
 		            .apiToken(apiKey)

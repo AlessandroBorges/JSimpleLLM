@@ -33,7 +33,7 @@ import com.knuddels.jtokkit.api.EncodingRegistry;
 import bor.tools.simplellm.CompletionResponse;
 import bor.tools.simplellm.Embeddings_Op;
 import bor.tools.simplellm.LLMConfig;
-import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.LLMProvider;
 import bor.tools.simplellm.MapModels;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model;
@@ -60,7 +60,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 /**
- * Implementation of the LLMService interface for OpenAI's Large Language Model
+ * Implementation of the LLMProvider interface for OpenAI's Large Language Model
  * API.
  * <p>
  * This class provides concrete implementations for all LLM operations including
@@ -80,9 +80,9 @@ import okhttp3.ResponseBody;
  * 
  * @since 1.0
  * 
- * @see LLMService
+ * @see LLMProvider
  */
-public class OpenAILLMService implements LLMService {
+public class OpenAILLMService implements LLMProvider {
 
 	private static final String MODELS_ENDPOINT = "/models";
 

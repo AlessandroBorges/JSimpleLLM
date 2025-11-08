@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import bor.tools.simplellm.LLMConfig;
-import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.LLMProvider;
 import bor.tools.simplellm.LLMServiceFactory;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.chat.Chat;
@@ -53,7 +53,7 @@ public class PerplexityDefaultParamsExample {
         System.out.println("=== Example 1: Built-in Defaults ===\n");
 
         // Create service with built-in defaults
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
         WebSearch searchService = (WebSearch) service;
 
         // No params needed - defaults are applied automatically
@@ -100,7 +100,7 @@ public class PerplexityDefaultParamsExample {
         config.setDefaultParams(customDefaults);
 
         // Create service with custom config
-        LLMService service = new PerplexityLLMService(config);
+        LLMProvider service = new PerplexityLLMService(config);
         WebSearch searchService = (WebSearch) service;
 
         System.out.println("Custom defaults configured:");
@@ -136,7 +136,7 @@ public class PerplexityDefaultParamsExample {
         System.out.println("=== Example 3: Overriding Defaults ===\n");
 
         // Service has built-in defaults
-        LLMService service = LLMServiceFactory.createPerplexity();
+        LLMProvider service = LLMServiceFactory.createPerplexity();
         WebSearch searchService = (WebSearch) service;
 
         Chat chat = new Chat();
@@ -193,7 +193,7 @@ public class PerplexityDefaultParamsExample {
 
         config.setDefaultParams(locationDefaults);
 
-        LLMService service = new PerplexityLLMService(config);
+        LLMProvider service = new PerplexityLLMService(config);
         WebSearch searchService = (WebSearch) service;
 
         System.out.println("Default location configured:");

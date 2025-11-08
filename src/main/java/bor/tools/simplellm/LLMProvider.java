@@ -25,7 +25,7 @@ import bor.tools.simplellm.exceptions.LLMException;
  * 
  * @since 1.0
  */
-public interface LLMService {
+public interface LLMProvider {
 
 	/**
 	 * Adiciona um novo modelo à lista de modelos registrados.
@@ -78,6 +78,29 @@ public interface LLMService {
 			return false;
 		}
 		return false;
+	}
+	
+	/**
+	 * Return all models - registered + installed
+	 * 
+	 * @return all models - registered + installed
+	 * @throws LLMException
+	 */
+	default MapModels getAllModels() throws LLMException {
+		MapModels registered = getRegisteredModels();
+		MapModels installed  = getInstalledModels();
+		MapModels allModels = new MapModels();
+		if(registered!=null && !registered.isEmpty()) {
+			for(var value : registered.values()) {
+				allModels.add(value);
+			}
+		}
+		if(installed!=null && !installed.isEmpty()) {
+			for(var value : installed.values()) {
+				allModels.add(value);
+			}
+		}
+		return allModels;
 	}
 	
 	/**

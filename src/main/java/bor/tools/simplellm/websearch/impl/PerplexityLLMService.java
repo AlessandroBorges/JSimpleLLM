@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 import bor.tools.simplellm.CompletionResponse;
 import bor.tools.simplellm.Embeddings_Op;
 import bor.tools.simplellm.LLMConfig;
-import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.LLMProvider;
 import bor.tools.simplellm.MapModels;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model;
@@ -42,7 +42,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 /**
- * Implementation of LLMService with WebSearch capabilities for Perplexity AI.
+ * Implementation of LLMProvider with WebSearch capabilities for Perplexity AI.
  * <p>
  * Perplexity AI provides LLM services with real-time web search integration.
  * Most models have native access to web search and return citations to source materials.
@@ -74,7 +74,7 @@ import okhttp3.ResponseBody;
  * </p>
  * <pre>{@code
  * // Create service
- * LLMService service = LLMServiceFactory.createPerplexity();
+ * LLMProvider service = LLMServiceFactory.createPerplexity();
  *
  * // Use as WebSearch
  * WebSearch searchService = (WebSearch) service;
@@ -103,9 +103,9 @@ import okhttp3.ResponseBody;
  *
  * @see WebSearch
  * @see SearchResponse
- * @see LLMService
+ * @see LLMProvider
  */
-public class PerplexityLLMService implements LLMService, WebSearch {
+public class PerplexityLLMService implements LLMProvider, WebSearch {
 
     Logger logger = LoggerFactory.getLogger(PerplexityLLMService.class.getName());
 
@@ -219,7 +219,7 @@ public class PerplexityLLMService implements LLMService, WebSearch {
                 .build();
     }
 
-    // ==================== LLMService Interface Methods ====================
+    // ==================== LLMProvider Interface Methods ====================
 
     @Override
     public SERVICE_PROVIDER getServiceProvider() {

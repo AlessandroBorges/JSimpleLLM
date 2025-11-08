@@ -70,14 +70,14 @@ public class ContextManager {
 	/**
 	 * Serviço de LLM para operações como sumarização e token count.
 	 * 
-	 * @see LLMService#sumarizeChat(Chat, String, MapParam)
-	 * @see LLMService#tokenCount(String, String)
+	 * @see LLMProvider#sumarizeChat(Chat, String, MapParam)
+	 * @see LLMProvider#tokenCount(String, String)
 	 */
-	private LLMService llmService;
+	private LLMProvider llmService;
 
 	public ContextManager() {}
 
-	public ContextManager(ContextWindowType contextType, int maxContextWindow, LLMService llmService) {
+	public ContextManager(ContextWindowType contextType, int maxContextWindow, LLMProvider llmService) {
 		super();
 		this.contextType = contextType;
 		this.maxContextWindow = maxContextWindow;
@@ -172,8 +172,8 @@ public class ContextManager {
 	 * 
 	 * @throws LLMException
 	 * 
-	 * @see LLMService#tokenCount(String, String)
-	 * @see LLMService#sumarizeChat(Chat, String, MapParam)
+	 * @see LLMProvider#tokenCount(String, String)
+	 * @see LLMProvider#sumarizeChat(Chat, String, MapParam)
 	 */
 	protected void applyRollingWindow()
 	            throws LLMException {

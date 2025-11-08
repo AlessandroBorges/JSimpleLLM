@@ -14,13 +14,13 @@ import bor.tools.simplellm.websearch.impl.PerplexityLLMService;
  *
  * <h2>Difference from LLMServiceFactory</h2>
  * <p>
- * While {@code LLMServiceFactory} returns {@code LLMService} instances (which may
+ * While {@code LLMServiceFactory} returns {@code LLMProvider} instances (which may
  * or may not support web search), {@code WebSearchFactory} returns {@code WebSearch}
  * instances (guaranteed to support web search operations).
  * </p>
  * <pre>{@code
  * // Via LLMServiceFactory (requires cast)
- * LLMService service = LLMServiceFactory.createPerplexity();
+ * LLMProvider service = LLMServiceFactory.createPerplexity();
  * WebSearch search = (WebSearch) service;
  *
  * // Via WebSearchFactory (direct, no cast)

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import bor.tools.simplellm.LLMConfig;
-import bor.tools.simplellm.LLMService;
+import bor.tools.simplellm.LLMProvider;
 import bor.tools.simplellm.LLMServiceFactory;
 import bor.tools.simplellm.SERVICE_PROVIDER;
 import bor.tools.simplellm.websearch.WebSearch;
@@ -39,7 +39,7 @@ class WebSearchFactoryTest {
     @DisplayName("Both factories return same Perplexity implementation")
     void testPerplexityCompatibility() {
         // Create via LLMServiceFactory
-        LLMService llmService = LLMServiceFactory.createPerplexity();
+        LLMProvider llmService = LLMServiceFactory.createPerplexity();
 
         // Create via WebSearchFactory
         WebSearch webSearch = WebSearchFactory.createPerplexity();
@@ -50,19 +50,19 @@ class WebSearchFactoryTest {
         assertInstanceOf(PerplexityLLMService.class, webSearch,
             "WebSearchFactory should return PerplexityLLMService");
 
-        // LLMService should be castable to WebSearch
+        // LLMProvider should be castable to WebSearch
         assertInstanceOf(WebSearch.class, llmService,
             "PerplexityLLMService from LLMServiceFactory should implement WebSearch");
 
-        // WebSearch should be castable to LLMService
-        assertInstanceOf(LLMService.class, webSearch,
-            "PerplexityLLMService from WebSearchFactory should implement LLMService");
+        // WebSearch should be castable to LLMProvider
+        assertInstanceOf(LLMProvider.class, webSearch,
+            "PerplexityLLMService from WebSearchFactory should implement LLMProvider");
     }
 
     @Test
     @DisplayName("Both factories return same implementation class")
     void testSameImplementationClass() {
-        LLMService llmService = LLMServiceFactory.createPerplexity();
+        LLMProvider llmService = LLMServiceFactory.createPerplexity();
         WebSearch webSearch = WebSearchFactory.createPerplexity();
 
         // Should be exact same class
@@ -73,13 +73,13 @@ class WebSearchFactoryTest {
     @Test
     @DisplayName("Both factories support SERVICE_PROVIDER.PERPLEXITY")
     void testServiceProvider() {
-        LLMService llmService = LLMServiceFactory.createPerplexity();
+        LLMProvider llmService = LLMServiceFactory.createPerplexity();
         WebSearch webSearch = WebSearchFactory.createPerplexity();
 
         // Both should report PERPLEXITY as provider
         assertEquals(SERVICE_PROVIDER.PERPLEXITY, llmService.getServiceProvider(),
-            "LLMService should report PERPLEXITY provider");
-        assertEquals(SERVICE_PROVIDER.PERPLEXITY, ((LLMService) webSearch).getServiceProvider(),
+            "LLMProvider should report PERPLEXITY provider");
+        assertEquals(SERVICE_PROVIDER.PERPLEXITY, ((LLMProvider) webSearch).getServiceProvider(),
             "WebSearch should report PERPLEXITY provider");
     }
 
