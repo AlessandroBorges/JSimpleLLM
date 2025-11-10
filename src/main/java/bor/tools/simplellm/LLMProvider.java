@@ -650,6 +650,7 @@ public interface LLMProvider {
 	 * understanding of context and semantics to make an informed classification.
 	 * </p>
 	 *
+	 * @param model                 the model to use for classification
 	 * @param conteudoMarkdown      the markdown content to classify
 	 * @param allNames              array of category names to choose from
 	 * @param allNamesAndDescriptions array of category names with descriptions for better context
@@ -658,7 +659,8 @@ public interface LLMProvider {
 	 * 
 	 * @throws LLMException if there's an error during classification
 	 */
-	default String classifyContent(String conteudoMarkdown, 
+	default String classifyContent(Model model,
+	                               String conteudoMarkdown, 
 	                               String[] allNames, 
 	                               String[] allNamesAndDescriptions) throws LLMException 
 	{
@@ -667,7 +669,7 @@ public interface LLMProvider {
 		
 		if (conteudoMarkdown != null && !conteudoMarkdown.isEmpty() && allNames != null && allNames.length > 0) {
 			
-			String system = "You are an expert content classifier. "
+			String system = "You are an content classifier. "
 					+ "Given a piece of content in markdown format, "
 					+ "classify it into one of the provided categories. "
 					+ "Respond with only the category name, no explanations nor descriptions."
@@ -682,7 +684,14 @@ public interface LLMProvider {
 					      + "Choose one of the categories above.";
 			
 			try {
-				CompletionResponse response = completion(system, prompt, null);
+			        MapParam params = new MapParam();
+			        params.temperature(0.45f);
+			        params.reasoningEffort(Reasoning_Effort.low);
+			        params.maxTokens(1024);
+			     //   params.modelObj(model);
+			        params.model(model.getName());
+			        
+				CompletionResponse response = completion(system, prompt, params);
 				if (response != null && response.getContent() != null) {
 					String classification = response.getContent().toString().trim();
 					// Validate classification against provided names

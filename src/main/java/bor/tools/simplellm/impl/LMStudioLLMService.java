@@ -309,55 +309,28 @@ public class LMStudioLLMService extends OpenAILLMService {
 	public boolean isModelType(Model model, Model_Type type) {
 		if (model == null || type == null) {
 			return false;
-		}			
-		String modelName = model.getName();
-		
-		//check if it already defined in the model
-        if(model!=null && model.isType(type)) {
+		}
+
+		// Check if already defined in the model
+		if (model.isType(type)) {
 			return true;
 		}
-        if(type== REASONING || type== Model_Type.REASONING_PROMPT) {
-			//check if it's in the reasoning models list
-        	if(model.isType(REASONING) || model.isType(Model_Type.REASONING_PROMPT)) {
+
+		// Special handling for reasoning models with known list
+		if (type == REASONING || type == Model_Type.REASONING_PROMPT) {
+			if (model.isType(REASONING) || model.isType(Model_Type.REASONING_PROMPT)) {
 				return true;
 			}
-			for(String mname: REASONING_MODELS) {
-				if(modelName.equalsIgnoreCase(mname)) {
+			String modelName = model.getName();
+			for (String mname : REASONING_MODELS) {
+				if (modelName.equalsIgnoreCase(mname)) {
 					return true;
 				}
 			}
 		}
-		// Fallback to name-based detection for common LM Studio models
-		String lowerName = modelName.toLowerCase();
-		switch (type) {
-			case VISION:
-				return lowerName.contains("llava") 
-							|| lowerName.contains("vision") 
-							|| lowerName.contains("bakllava");
 
-			case CODING:
-				return lowerName.contains("code") 
-					   || lowerName.contains("codellama")
-				       || lowerName.contains("deepseek")
-				       || lowerName.contains("starcoder")
-				       || lowerName.contains("wizardcoder");
-
-			case EMBEDDING:
-				return lowerName.contains("embed") 
-					   || lowerName.contains("bge")
-				       || lowerName.contains("nomic")
-				       || lowerName.contains("e5");
-
-			case REASONING:
-				return lowerName.contains("llama") 
-					   || lowerName.contains("mistral")
-				       || lowerName.contains("phi")
-				       || lowerName.contains("qwen")
-				       || lowerName.contains("gemma");
-
-			default:
-				return false; 
-		}
+		// Use enhanced detection from ModelFeatureDetector
+		return ModelFeatureDetector.isModelType(model, type);
 	}
 
 
@@ -529,7 +502,7 @@ public class LMStudioLLMService extends OpenAILLMService {
 		*/
 		// Ensure max tokens is set
 		if (params.getMaxTokens() == null) {			
-			params.maxTokens(2048); // LM Studio models often support large contexts
+			params.maxTokens(4000); // LM Studio models often support large contexts
 		}
 		
 		// Ensure temperature is set
@@ -599,7 +572,7 @@ public class LMStudioLLMService extends OpenAILLMService {
 				} else {
 					prompt ="reasoning_effort:" + effort.getValue() + "\n"
 							+ "/think\n"
-							+ "enable_thinking=True\n"
+							+ "enable_thinking=True\n---\n"
 				            + prompt;
 				}				
 			}

@@ -58,6 +58,11 @@ public enum Model_Type {
 		REASONING_PROMPT,
 		
 		/**
+		 * INSTRUCT: Instruction-following models optimized for following user commands
+		 */
+		INSTRUCT,
+		
+		/**
 		 * CODING: Models designed for code generation and programming tasks
 		 */
 		CODING,

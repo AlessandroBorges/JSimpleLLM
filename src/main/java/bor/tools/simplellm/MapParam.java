@@ -20,6 +20,8 @@ import bor.tools.simplellm.websearch.SearchMode;
  */
 public class MapParam extends LinkedHashMap<String, Object> {
 
+	protected static final String TOP_K = "top_k";
+
 	private static final String STREAM = "stream";
 
 	public static final String REASONING_EFFORT = "reasoning_effort";
@@ -768,4 +770,19 @@ public class MapParam extends LinkedHashMap<String, Object> {
 		return (String) get(SEARCH_BEFORE_DATE_FILTER);
 	}
 
+	/**
+	 * Sets the top_k parameter to limit the number of top results considered.
+	 * @param i
+	 */
+	public void top_k(int top_k) {
+		put(TOP_K, top_k);
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	public Integer getTop_k() {
+		return getAsInteger(TOP_K);
+	}	
 }

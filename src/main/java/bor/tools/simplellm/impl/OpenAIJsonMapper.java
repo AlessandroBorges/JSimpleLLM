@@ -381,6 +381,15 @@ public class OpenAIJsonMapper {
 		return request;
 	}
 
+	/**
+	 * Converts an OpenAI models response to a Map of Model objects.
+	 * 
+	 * @param response the response Map from OpenAI API
+	 * 
+	 * @return Map of model ID to Model objects
+	 * 
+	 * @throws LLMException if conversion fails
+	 */
 	public Map<String, Model> fromModelsRequest(Map<String, Object> response) throws LLMException {
 		Map<String, Model> models = new HashMap<>();
 		try {
@@ -406,23 +415,11 @@ public class OpenAIJsonMapper {
 					} else if (modelData.containsKey("max_context_length")) {
 						contextLength = (Integer) modelData.get("max_context_length");
 					}
-					List<Model_Type> types   = new ArrayList<>();
-					String           idLower = id.toLowerCase();
-					types.add(id.contains("embed") ? Model_Type.EMBEDDING : Model_Type.LANGUAGE);
-					if (id.toLowerCase().contains("code") || id.toLowerCase().contains("wizard")) {
-						types.add(Model_Type.CODING);
-					} else if (id.toLowerCase().contains("vision") || id.toLowerCase().contains("image")
-					           || id.toLowerCase().contains("dalle")) {
-						types.add(Model_Type.VISION);
-					} else if (id.toLowerCase().contains("fast") || id.toLowerCase().contains("mini")
-					           || idLower.contains("nano")) {
-						types.add(Model_Type.FAST);
-					} else if (id.toLowerCase().contains("reason") || id.toLowerCase().contains("gpt-4o-r")
-					           || id.toLowerCase().contains("gemini-1.5")) {
-						types.add(Model_Type.REASONING);
-					}
-
-					Model model = new Model(id, contextLength, types.toArray(new Model_Type[1]));
+					
+					// Use ModelFeatureDetector for sophisticated capability detection
+					List<Model_Type> detectedTypes = ModelFeatureDetector.detectCapabilities(id, modelData);
+					
+					Model model = new Model(id, contextLength, detectedTypes.toArray(new Model_Type[0]));
 					models.put(id, model);
 				}
 			}

@@ -270,5 +270,21 @@ public class MapModels extends LinkedHashMap<String, Model> {
 		}
 		return copy;
 	}
+	
+	/**
+	 * Returns a string representation of the MapModels.
+	 */
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("MapModels {\n");
+		for( String key : this.keySet() ) {
+			Model model = this.get(key);
+			sb.append("  ").append(key).append(" : ")
+			.append(model.toString())
+			.append("\n");
+		}
+		sb.append("}");
+		return sb.toString();
+	}
 
 }

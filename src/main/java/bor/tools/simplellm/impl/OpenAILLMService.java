@@ -52,6 +52,7 @@ import bor.tools.simplellm.exceptions.LLMIllegalArgumentException;
 import bor.tools.simplellm.exceptions.LLMNetworkException;
 import bor.tools.simplellm.exceptions.LLMRateLimitException;
 import bor.tools.simplellm.exceptions.LLMTimeoutException;
+import bor.tools.simplellm.impl.FloatingCache.CacheEntry;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -218,17 +219,12 @@ public class OpenAILLMService implements LLMProvider {
 	protected final StreamingUtil    streamingUtil;
 	protected static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
 
-	/**
-	 * Cache of installed models to avoid repeated API calls.
-	 */
-	private MapModels installedModelsCache = new MapModels();
+	
 	
 	/** Locks the cache in refresh */
 	private final Object cacheLock = new Object();
 	
-	/** Timestamp of last installed models fetch */
-    private LocalDateTime lastInstalledModelsFetch = null;
-	
+		
 	private static final String PROMPT_SUMMARY = null;
 
 	/**
@@ -333,8 +329,11 @@ public class OpenAILLMService implements LLMProvider {
 				return handleHttpResponse(response);
 			}
 		} catch (IOException e) {
-			throw new LLMNetworkException("Network error during API request: "
+			logger.error("Network error during API request: {}", e.getMessage(), e);
+			var ee = new LLMNetworkException("Network error during API request: "
 			            + e.getMessage(), e);
+			ee.printStackTrace();
+			throw ee;
 		}
 	}
 	
@@ -390,11 +389,16 @@ public class OpenAILLMService implements LLMProvider {
 	 * @return cached installed models (clone).
 	 * @throws LLMException
 	 */
-	public MapModels getInstalledModels() throws LLMException {
+	public MapModels getInstalledModels() throws LLMException {		
+		CacheEntry entry = getModelsCache(); 
+		var installedModelsCache = entry.getModels();
+		var lastInstalledModelsFetch = entry.getFetchTime();
+		boolean expired = lastInstalledModelsFetch == null
+		        || lastInstalledModelsFetch.plusMinutes(CACHE_EXPIRES_MINUTES).isBefore(LocalDateTime.now());
+		
 		if (installedModelsCache==null 
 			|| installedModelsCache.isEmpty() 
-			|| lastInstalledModelsFetch == null
-		    || lastInstalledModelsFetch.plusMinutes(CACHE_EXPIRES_MINUTES).isAfter(LocalDateTime.now())) 
+			|| expired ) 
 		{ // refresh
 			try {
 				synchronized(cacheLock) {
@@ -406,13 +410,13 @@ public class OpenAILLMService implements LLMProvider {
 					installedModelsCache.putAll(newData);
 					newData.clear();
 				}				
-				lastInstalledModelsFetch = LocalDateTime.now();
+				updateModelsCache(installedModelsCache)			;	
 			} catch (LLMException e) {
 				logger.warn("Failed to retrieve installed models from LM Studio: "
 				            + e.getMessage());
 			}
 		}
-		return installedModelsCache.clone();
+		return installedModelsCache;
 	}
 	
 	/**
@@ -1199,6 +1203,8 @@ public class OpenAILLMService implements LLMProvider {
 		// Create parameters copy and enable streaming
 		MapParam checkedParams = new MapParam(params);		
 		checkedParams.model(modelName);	
+		checkedParams.modelObj(null);// clear modelObj to avoid confusion
+		
 		// apply reasoning effort if model supports it
 		if(model.isTypeReasoning() && params.getReasoningEffort()!=null) {
 			checkedParams.reasoningEffort(params.getReasoningEffort()); 
@@ -1447,5 +1453,21 @@ public class OpenAILLMService implements LLMProvider {
 		return SERVICE_PROVIDER.OPENAI;
 	}
 
-
+	/**
+	 * Get the installed models cache.
+	 * @return the installed models cache
+	 */
+	protected CacheEntry getModelsCache() {
+		FloatingCache  cache = FloatingCache.getInstance();
+		CacheEntry     entry = cache.getCacheEntry(this);		
+		return entry;
+	}
+	
+	protected void updateModelsCache(MapModels models) {
+		FloatingCache  cache = FloatingCache.getInstance();
+		CacheEntry     entry = cache.getCacheEntry(this);
+		entry.setModels(models);
+		entry.updateTimestamp();
+	}
+	
 }
