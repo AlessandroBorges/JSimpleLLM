@@ -213,16 +213,34 @@ public class ModelEmbedding extends Model {
 	 */
 	public String applyOperationPrefix(Embeddings_Op op, String text) {
 		String prefix = getPrefixForOperation(op);
-
-		if (prefix != null && prefix.isEmpty() == false) {
+		if (text !=null && prefix != null && prefix.isEmpty() == false) {
 			if (prefix.contains("%s")) {
 				return String.format(prefix, text);
 			}
-			return prefix
-			            + " "
-			            + text;
+			return prefix + " " + text;
 		}
 		return text;
+	}
+	
+	/**
+	 * Apply the operation-specific prefix to an array of texts.
+	 * <p>
+	 * This method iterates over the provided array of texts and applies the
+	 * operation-specific prefix for the given {@code Embeddings_Op} to each text.
+	 * It modifies the original array in place.
+	 * </p>
+	 * 
+	 * @param op    the embedding operation type
+	 * @param texts the array of texts to which the prefix will be applied
+	 * 
+	 * @return the modified array of texts with the operation-specific prefixes
+	 *         applied
+	 */
+	public String[] applyOperationPrefix(Embeddings_Op op, String[] texts) {
+		for (int i=0; i<texts.length; i++) {
+			texts[i] = applyOperationPrefix(op, texts[i]);
+		}
+		return texts;
 	}
 
 	/**

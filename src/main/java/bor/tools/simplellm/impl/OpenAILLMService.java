@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -544,49 +545,13 @@ public class OpenAILLMService implements LLMProvider {
 			throw new LLMException("Text cannot be null or empty");
 		}
 		
-		if(params==null || params.isEmpty()) {
-		  throw new LLMException("params cannot be null or empty");
-		}		
-		
-        Object modelObj = params.getModelObj();
-        if(modelObj==null) {
-        	modelObj = getLLMConfig().getDefaultEmbeddingModelName();
-        	if(modelObj==null)
-        		throw new LLMException("Model must be specified in parameters for embeddings.");
-		}
-        // @TODO fix the modelObj - it may fail if modelObj is not a String
-        var model =  modelObj instanceof ModelEmbedding ? 
-        			  			  (ModelEmbedding) modelObj 
-        			  			: getLLMConfig().getModel(modelObj.toString());
-        
-		// Use default model if not specified
-		if (model == null || model.getName().trim().isEmpty()) {
-			throw new LLMException("Model must be specified in parameters for embeddings.");
-		}
-
-		if (isModelType(model, EMBEDDING) == false) {
-			throw new LLMException("Embeddings not supported for model "
-			            + model
-			            + ". Use a dedicated embedding model like text-embedding-3-small.");
-		}
-		
-		Integer dimensions = params.getDimension();	
-		if (isModelType(model, EMBEDDING_DIMENSION) == false && dimensions != null) {
-			throw new LLMException("Model "
-			            + model
-			            + " does not support custom embedding dimensions.");
-		}
-
-		String encodingFormat = null;
-		if (isOpenAIEndpoint()) {
-			encodingFormat = "base64";
-		}
+		validateEmbeddingsParams(params);
+		ModelEmbedding model = validateAndGetEmbeddingModel(params);
+		Integer dimensions = validateEmbeddingDimensions(model, params);
+		String encodingFormat = getEncodingFormat();
 
 		try {		
-			if(model instanceof ModelEmbedding me) {
-				texto = me.applyOperationPrefix(op, texto);	
-			}
-			
+			texto = model.applyOperationPrefix(op, texto);
 
 			// Create request payload
 			Map<String, Object> payload = jsonMapper.toEmbeddingsRequest(texto.trim(), model, dimensions, encodingFormat);
@@ -607,6 +572,41 @@ public class OpenAILLMService implements LLMProvider {
 		}
 	}
 	
+	/**
+	 * Calculates embeddings
+	 */
+	@Override
+	public  List<float[]> embeddings(Embeddings_Op op, String[] texto, MapParam params) throws LLMException{
+				 
+		if (texto == null || texto.length==0) {
+				throw new LLMException("Text cannot be null or empty");
+		}
+			
+		validateEmbeddingsParams(params);
+		ModelEmbedding model = validateAndGetEmbeddingModel(params);
+		Integer dimensions = validateEmbeddingDimensions(model, params);
+		String encodingFormat = getEncodingFormat();
+
+		try {		
+			texto = model.applyOperationPrefix(op, texto);
+			// Create request payload
+			Map<String, Object> payload = jsonMapper.toEmbeddingsRequest(texto, model, dimensions, encodingFormat);
+
+			// Make API request
+			Map<String, Object> response = postRequest("embeddings", payload);
+
+			// Convert response to float array
+			return jsonMapper.fromEmbeddingsArrayResponse(response, dimensions);
+
+		} catch (LLMException e) {
+			logger.error("Error generating embeddings: {}", e.getMessage());
+			throw e;
+		} catch (Exception e) {
+			logger.error("Unexpected error generating embeddings: {}", e.getMessage(), e);
+			throw new LLMException("Unexpected error during embeddings generation: "
+			            + e.getMessage(), e);
+		}
+	 }
 	
 	/**
 	 * 
@@ -1468,6 +1468,76 @@ public class OpenAILLMService implements LLMProvider {
 		CacheEntry     entry = cache.getCacheEntry(this);
 		entry.setModels(models);
 		entry.updateTimestamp();
+	}
+	
+	/**
+	 * Validates that the params object is not null or empty.
+	 * @param params the parameters to validate
+	 * @throws LLMException if params is null or empty
+	 */
+	private void validateEmbeddingsParams(MapParam params) throws LLMException {
+		if(params == null || params.isEmpty()) {
+			throw new LLMException("params cannot be null or empty");
+		}
+	}
+	
+	/**
+	 * Validates and retrieves the embedding model from params.
+	 * @param params the parameters containing the model information
+	 * @return the validated ModelEmbedding
+	 * @throws LLMException if model is not specified or invalid
+	 */
+	private ModelEmbedding validateAndGetEmbeddingModel(MapParam params) throws LLMException {
+		Object modelObj = params.getModelObj();
+		if(modelObj == null) {
+			modelObj = getLLMConfig().getDefaultEmbeddingModelName();
+			if(modelObj == null) {
+				throw new LLMException("Model must be specified in parameters for embeddings.");
+			}
+		}
+		
+		// @TODO fix the modelObj - it may fail if modelObj is not a String
+		var model = modelObj instanceof ModelEmbedding ? 
+					(ModelEmbedding) modelObj 
+					: getLLMConfig().getModel(modelObj.toString());
+		
+		// Use default model if not specified
+		if (model == null || model.getName().trim().isEmpty()) {
+			throw new LLMException("Model must be specified in parameters for embeddings.");
+		}
+
+		if (isModelType(model, EMBEDDING) == false) {
+			throw new LLMException("Embeddings not supported for model "
+						+ model
+						+ ". Use a dedicated embedding model like text-embedding-3-small.");
+		}
+		
+		return (ModelEmbedding) model;
+	}
+	
+	/**
+	 * Validates that the model supports custom dimensions if dimensions are specified.
+	 * @param model the embedding model
+	 * @param params the parameters containing dimension information
+	 * @return the dimension value from params, or null if not specified
+	 * @throws LLMException if dimensions are specified for a model that doesn't support them
+	 */
+	private Integer validateEmbeddingDimensions(ModelEmbedding model, MapParam params) throws LLMException {
+		Integer dimensions = params.getDimension();
+		if (isModelType(model, EMBEDDING_DIMENSION) == false && dimensions != null) {
+			throw new LLMException("Model "
+						+ model
+						+ " does not support custom embedding dimensions.");
+		}
+		return dimensions;
+	}
+	
+	/**
+	 * Gets the encoding format for embeddings based on endpoint type.
+	 * @return "base64" if OpenAI endpoint, null otherwise
+	 */
+	private String getEncodingFormat() {
+		return isOpenAIEndpoint() ? "base64" : null;
 	}
 	
 }

@@ -380,6 +380,38 @@ public class OpenAIJsonMapper {
 
 		return request;
 	}
+	
+	/**
+	 * Converts an embeddings request to OpenAI API format.
+	 * 
+	 * @param input      the text array to embed
+	 * @param model      the embedding model
+	 * @param dimensions optional dimension parameter
+	 * @param encodingFormat optional encoding format (e.g., "base64")
+	 * 
+	 * @return request payload Map for requesting embeddings
+	 */
+	public Map<String, Object> toEmbeddingsRequest(String[] input, 
+	                                               Model model, 
+	                                               Integer dimensions, 
+	                                               String encodingFormat) 
+	{
+		Map<String, Object> request = new HashMap<>();
+		request.put("input", input);
+		if (model == null) {
+			throw new IllegalArgumentException("Model must be specified for embeddings request");
+		}
+		request.put("model", model.getName());
+
+		if (dimensions != null) {
+			request.put("dimensions", dimensions);
+		}
+		if (encodingFormat != null) {
+			request.put("encoding_format", encodingFormat);
+		}
+
+		return request;
+	}
 
 	/**
 	 * Converts an OpenAI models response to a Map of Model objects.
@@ -435,6 +467,7 @@ public class OpenAIJsonMapper {
 	 * Converts an OpenAI embeddings response to a float array.
 	 * 
 	 * @param response the response Map from OpenAI API
+	 * @param vecSize  the expected vector size
 	 * 
 	 * @return float array of embeddings
 	 * 
@@ -443,54 +476,163 @@ public class OpenAIJsonMapper {
 	@SuppressWarnings("unchecked")
 	public float[] fromEmbeddingsResponse(Map<String, Object> response, Integer vecSize) throws LLMException {
 		try {
-			float[]                   vec  = null;
 			List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
-			if (data != null && !data.isEmpty()) {
-				Object embeddingObj = data.get(0).get("embedding");
-				// vanilla float array
-				if ((embeddingObj instanceof List)) {
-					// Handle list of numbers
-					List<Number> embedding = (List<Number>) embeddingObj;
-					if (embedding != null) {
-						vec = new float[embedding.size()];
-						for (int i = 0; i < embedding.size(); i++) {
-							vec[i] = embedding.get(i).floatValue();
-						}
-						embedding.clear();
-					}
-					// base64 encoding
-				} else if (embeddingObj instanceof String) {
-					// Handle base64 encoded embeddings if returned as string
-					String base64Str = (String) embeddingObj;
-					// Decode base64 string to byte array and convert to float array as needed
-					vec = Utils.base64ToFloatArray(base64Str);
-					if (vecSize != null && vecSize > 64 && vec.length != vecSize) {
-						float[] temp = new float[vecSize];
-						System.arraycopy(vec, 0, temp, 0, Math.min(vec.length, vecSize));
-						vec = temp;
-					}
-					vec = Utils.normalize(vec);
-					return vec;
-				} else {
-					throw new LLMException("Unexpected embedding format "
-					            + embeddingObj, null);
-				}
-
-				if (vecSize != null && vecSize >= 16 && vec != null && vec.length != vecSize) {
-					float[] temp = new float[vecSize];
-					System.arraycopy(vec, 0, temp, 0, Math.min(vec.length, vecSize));
-					vec = temp;
-				}
-				// Normalize to unit
-				vec = Utils.normalize(vec);
-				return vec;
-			} else {
+			if (data == null || data.isEmpty()) {
 				throw new LLMException("No embedding data found in response", null);
 			}
+			
+			Object embeddingObj = data.get(0).get("embedding");
+			return convertToFloatArray(embeddingObj, vecSize);
+			
 		} catch (Exception e) {
-			throw new LLMException("Failed to parse embeddings response: "
-			            + e.getMessage(), e);
+			throw new LLMException("Failed to parse embeddings response: " + e.getMessage(), e);
 		}
+	}
+	
+	/**
+	 * Converts an OpenAI embeddings array response to a list of float arrays.
+	 * 
+	 * @param response the response Map from OpenAI API
+	 * @param vecSize  the expected vector size
+	 * 
+	 * @return list of float arrays of embeddings
+	 * 
+	 * @throws LLMException if conversion fails
+	 */
+	@SuppressWarnings("unchecked")
+	public List<float[]> fromEmbeddingsArrayResponse(Map<String, Object> response, Integer vecSize) throws LLMException {
+		List<float[]> list = new ArrayList<>();
+		try {
+			List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
+			if (data == null || data.isEmpty()) {
+				throw new LLMException("No embedding data found in response", null);
+			}			
+			Object embeddingArrayObj = data.get(0).get("embedding");
+			
+			// Check if it's an array of embeddings
+			if (embeddingArrayObj instanceof List) {
+				List<?> embeddingList = (List<?>) embeddingArrayObj;
+				
+				if (!embeddingList.isEmpty()) {
+					Object firstElement = embeddingList.get(0);
+					
+					// Array of base64 strings
+					if (firstElement instanceof String) {
+						List<String> embeddingStrs = (List<String>) embeddingArrayObj;
+						for (String base64Str : embeddingStrs) {
+							list.add(convertBase64ToFloatArray(base64Str, vecSize));
+						}
+						embeddingStrs.clear();
+					}
+					// Array of number lists
+					else if (firstElement instanceof List) {
+						List<List<Number>> embeddings = (List<List<Number>>) embeddingArrayObj;
+						for (List<Number> emb : embeddings) {
+							list.add(convertNumberListToFloatArray(emb, vecSize));
+						}
+						embeddings.clear();
+					}
+				}
+			}			
+			return list;			
+		} catch (Exception e) {
+			throw new LLMException("Failed to parse embeddings response: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Converts an embedding object to a float array.
+	 * Handles both List&lt;Number&gt; and base64 String formats.
+	 * 
+	 * @param embeddingObj the embedding object
+	 * @param vecSize      the expected vector size (nullable)
+	 * 
+	 * @return normalized float array
+	 * 
+	 * @throws LLMException if conversion fails
+	 */
+	@SuppressWarnings("unchecked")
+	private float[] convertToFloatArray(Object embeddingObj, Integer vecSize) throws LLMException {
+		if (embeddingObj == null) {
+			throw new LLMException("Embedding object is null", null);
+		}
+		
+		float[] vec;
+		
+		// Handle base64 encoded string
+		if (embeddingObj instanceof String) {
+			vec = convertBase64ToFloatArray((String) embeddingObj, vecSize);
+		}
+		// Handle list of numbers
+		else if (embeddingObj instanceof List) {
+			List<Number> embedding = (List<Number>) embeddingObj;
+			vec = convertNumberListToFloatArray(embedding, vecSize);
+			embedding.clear();
+		}
+		// Handle existing float array
+		else if (embeddingObj instanceof float[]) {
+			vec = (float[]) embeddingObj;
+			vec = resizeIfNeeded(vec, vecSize);
+			vec = Utils.normalize(vec);
+		}
+		else {
+			throw new LLMException("Unexpected embedding format: " + embeddingObj.getClass().getName(), null);
+		}
+		
+		return vec;
+	}
+
+	/**
+	 * Converts a base64 encoded string to a normalized float array.
+	 * 
+	 * @param base64Str the base64 encoded string
+	 * @param vecSize   the expected vector size (nullable)
+	 * 
+	 * @return normalized float array
+	 * 
+	 * @throws LLMException if conversion fails
+	 */
+	private float[] convertBase64ToFloatArray(String base64Str, Integer vecSize) throws LLMException {
+		float[] vec = Utils.base64ToFloatArray(base64Str);
+		vec = resizeIfNeeded(vec, vecSize);
+		return Utils.normalize(vec);
+	}
+
+	/**
+	 * Converts a List&lt;Number&gt; to a normalized float array.
+	 * 
+	 * @param numberList the list of numbers
+	 * @param vecSize    the expected vector size (nullable)
+	 * 
+	 * @return normalized float array
+	 */
+	private float[] convertNumberListToFloatArray(List<Number> numberList, Integer vecSize) {
+		int size = (vecSize != null && vecSize >= 16) ? vecSize : numberList.size();
+		float[] vec = new float[size];
+		
+		int copyLength = Math.min(vec.length, numberList.size());
+		for (int i = 0; i < copyLength; i++) {
+			vec[i] = numberList.get(i).floatValue();
+		}
+		
+		return Utils.normalize(vec);
+	}
+
+	/**
+	 * Resizes the float array if needed based on the expected vector size.
+	 * 
+	 * @param vec     the original float array
+	 * @param vecSize the expected vector size (nullable)
+	 * 
+	 * @return resized array or original if no resize needed
+	 */
+	private float[] resizeIfNeeded(float[] vec, Integer vecSize) {
+		if (vecSize != null && vecSize >= 16 && vec.length != vecSize) {
+			float[] temp = new float[vecSize];
+			System.arraycopy(vec, 0, temp, 0, Math.min(vec.length, vecSize));
+			return temp;
+		}
+		return vec;
 	}
 
 	/**
