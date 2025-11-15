@@ -258,8 +258,7 @@ public class ModelEmbedding extends Model {
 		copy.name = this.name;
 		copy.alias = this.alias;
 		copy.contextLength = this.contextLength;
-		copy.types = this.types==null ? null : List.copyOf(this.types);
-		
+		copy.types = this.types==null ? null : List.copyOf(this.types);		
 		return copy;
 	}
 }

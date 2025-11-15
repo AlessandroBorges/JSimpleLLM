@@ -489,56 +489,45 @@ public class OpenAIJsonMapper {
 		}
 	}
 	
+
 	/**
-	 * Converts an OpenAI embeddings array response to a list of float arrays.
+	 * Converts an OpenAI embeddings response to a list of float arrays.
 	 * 
 	 * @param response the response Map from OpenAI API
 	 * @param vecSize  the expected vector size
 	 * 
-	 * @return list of float arrays of embeddings
+	 * @return List of float arrays of embeddings
 	 * 
 	 * @throws LLMException if conversion fails
 	 */
 	@SuppressWarnings("unchecked")
-	public List<float[]> fromEmbeddingsArrayResponse(Map<String, Object> response, Integer vecSize) throws LLMException {
-		List<float[]> list = new ArrayList<>();
-		try {
-			List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
-			if (data == null || data.isEmpty()) {
-				throw new LLMException("No embedding data found in response", null);
-			}			
-			Object embeddingArrayObj = data.get(0).get("embedding");
-			
-			// Check if it's an array of embeddings
-			if (embeddingArrayObj instanceof List) {
-				List<?> embeddingList = (List<?>) embeddingArrayObj;
-				
-				if (!embeddingList.isEmpty()) {
-					Object firstElement = embeddingList.get(0);
-					
-					// Array of base64 strings
-					if (firstElement instanceof String) {
-						List<String> embeddingStrs = (List<String>) embeddingArrayObj;
-						for (String base64Str : embeddingStrs) {
-							list.add(convertBase64ToFloatArray(base64Str, vecSize));
-						}
-						embeddingStrs.clear();
-					}
-					// Array of number lists
-					else if (firstElement instanceof List) {
-						List<List<Number>> embeddings = (List<List<Number>>) embeddingArrayObj;
-						for (List<Number> emb : embeddings) {
-							list.add(convertNumberListToFloatArray(emb, vecSize));
-						}
-						embeddings.clear();
-					}
-				}
-			}			
-			return list;			
-		} catch (Exception e) {
-			throw new LLMException("Failed to parse embeddings response: " + e.getMessage(), e);
-		}
+	public List<float[]> fromEmbeddingsArrayResponse(Map<String, Object> response, Integer vecSize) 
+				throws LLMException {
+	    try {
+	        List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
+	        if (data == null || data.isEmpty()) {
+	            throw new LLMException("No embedding data found in response", null);
+	        }
+
+	        List<float[]> result = new ArrayList<>();
+	        
+	        for (Map<String, Object> item : data) {
+	            Object embeddingObj = item.get("embedding");
+	            if (embeddingObj != null) {
+	                float[] embedding = convertToFloatArray(embeddingObj, vecSize);
+	                result.add(embedding);
+	            }
+	        }
+	        data.clear();
+	        return result;
+	        
+	    } catch (ClassCastException e) {
+	        throw new LLMException("Invalid response format for embeddings array: " + e.getMessage(), e);
+	    } catch (Exception e) {
+	        throw new LLMException("Failed to parse embeddings response: " + e.getMessage(), e);
+	    }
 	}
+
 
 	/**
 	 * Converts an embedding object to a float array.
