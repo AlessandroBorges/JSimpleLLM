@@ -4,7 +4,8 @@
       "Bash(mvn clean:*)",
       "Bash(mvn:*)",
       "WebSearch",
-      "WebFetch(domain:platform.openai.com)"
+      "WebFetch(domain:platform.openai.com)",
+      "WebFetch(domain:www.datacamp.com)"
     ],
     "deny": [],
     "ask": []

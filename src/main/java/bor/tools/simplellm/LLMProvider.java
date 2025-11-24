@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import bor.tools.simplellm.abstraction.*;
 import bor.tools.simplellm.chat.Chat;
 import bor.tools.simplellm.chat.ContentWrapper;
 import bor.tools.simplellm.exceptions.LLMException;
@@ -22,10 +23,21 @@ import bor.tools.simplellm.exceptions.LLMException;
  * </p>
  *
  * @author AlessandroBorges
- * 
+ *  
  * @since 1.0
+ * @see IModelManager
+ * @see IEmbeddingOperations
+ * @see ICompletionOperations
+ * @see IAPIResponseOperations
+ * @see Model
+ * @see LLMConfig
+ * @see CompletionResponse
+ * @see Chat
+ * @see Embeddings_Op
+ * @see Reasoning_Effort
  */
-public interface LLMProvider {
+public interface LLMProvider extends IModelManager, IEmbeddingOperations, 
+                                   ICompletionOperations, IAPIResponseOperations {
 
 	/**
 	 * Adiciona um novo modelo à lista de modelos registrados.
@@ -182,6 +194,7 @@ public interface LLMProvider {
 	 * 
 	 * @throws LLMException if there's an error generating the embeddings
 	 */
+	@Override
 	default float[] embeddings(String texto, Model model) throws LLMException {
 		MapParam params = new MapParam();
 		params.put("model", model);		
@@ -190,6 +203,35 @@ public interface LLMProvider {
 		} else {
 			throw new LLMException("Model " + (model != null ? model.getName() : "null") + " is not an EMBEDDING model");
 		}		
+	}
+	
+	/**
+	 * Reranks candidate texts based on their relevance to a given subject/query.
+	 * This default method computes embeddings for the subject and each candidate, then
+	 * calculates cosine similarity scores to determine relevance.<br>
+	 * 
+	 * Subclasses can implement more advanced reranking algorithms if needed.
+	 * 
+	 * @param subject the reference text or query to rank candidates against
+	 * @param candidates array of candidate texts to be ranked
+	 * @param params additional parameters including model name, top_k, etc.
+	 * 
+	 * @return array of ranking scores (float values) corresponding to each candidate,
+	 *         where higher scores indicate better relevance to the subject
+	 * @throws LLMException if there's an error during reranking
+	 */
+	@Override
+	default double[] rerank(String subject, String[] candidates, MapParam params) throws LLMException{
+		if(candidates==null || candidates.length==0) {
+			return new double[0];
+		}
+		double[] scores = new double[candidates.length];
+		float[] subjectEmbedding = embeddings(Embeddings_Op.QUERY, subject, params);
+		for(int i=0; i<candidates.length; i++) {
+			float[] candidateEmbedding = embeddings(Embeddings_Op.DOCUMENT, candidates[i], params);
+			scores[i] = Utils.cosineSimilarity(subjectEmbedding, candidateEmbedding);
+		}
+		return scores;
 	}
 
 	/**
@@ -674,10 +716,16 @@ public interface LLMProvider {
 					+ "classify it into one of the provided categories. "
 					+ "Respond with only the category name, no explanations nor descriptions."
 					+ "If none fit, respond with 'Unknown'.\n\n"
-					+ "Categories - Descriptions:\n";
+					+ "\t* Categories - Descriptions:\n";
 			
-			for (String nameDesc : allNamesAndDescriptions) {
-				system += "- " + nameDesc + "\n";
+			String[] namesAndDescriptions = allNamesAndDescriptions;
+			if(namesAndDescriptions==null || namesAndDescriptions.length==0) {
+				// Use names only
+				namesAndDescriptions = allNames;				
+			}
+			
+			for (String nameDesc : namesAndDescriptions) {
+				system += "\t\t* " + nameDesc + "\n";
 			}
 			
 			String prompt = "Classify the following content:\n\n" + conteudoMarkdown + "\n\n"
@@ -687,11 +735,13 @@ public interface LLMProvider {
 			        MapParam params = new MapParam();
 			        params.temperature(0.45f);
 			        params.reasoningEffort(Reasoning_Effort.low);
-			        params.maxTokens(1024);
-			     //   params.modelObj(model);
+			        params.maxTokens(1024);			     
 			        params.model(model.getName());
 			        
-				CompletionResponse response = completion(system, prompt, params);
+			    Chat chat = new Chat();
+			    chat.addSystemMessage(system);
+			   
+				CompletionResponse response = chatCompletion(chat, prompt, params);
 				if (response != null && response.getContent() != null) {
 					String classification = response.getContent().toString().trim();
 					// Validate classification against provided names
