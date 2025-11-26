@@ -1,5 +1,7 @@
 package bor.tools.simplellm;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 /**
  * Enumeration defining the various types of LLM models supported.
  * <p>
@@ -137,5 +139,52 @@ public enum Model_Type {
 		 *
 		 * @see bor.tools.simplellm.SearchResponse#getSearchQueriesCount()
 		 */
-		DEEP_RESEARCH
+		DEEP_RESEARCH;
+	
+	/**
+	 * Factory method to create Model_Type from string, ignoring case.
+	 * 
+	 * @param type
+	 * 
+	 * @return
+	 */
+	@JsonCreator
+	public static Model_Type fromString(String type) {
+		for (Model_Type mt : Model_Type.values()) {
+			if (mt.name().equalsIgnoreCase(type)) {
+				return mt;
+			}
+		}
+		throw new IllegalArgumentException("Unknown Model_Type: "
+		            + type);
+	}
+	
+	/**
+	 * verify if a string exists in a Model_Type array, ignoring case.
+	 * @param test
+	 * @return
+	 */
+	public static boolean containsInArray(String test, Model_Type[] array) {
+	    for (Model_Type mt : array) {
+	        if (mt.name().equalsIgnoreCase(test)) {
+	            return true;
+	        }
+	    }
+	    return false;
+	}
+	
+	/**
+	 * verify if a Model_Type exists in a Model_Type array.
+	 * @param test
+	 * @return
+	 */
+	public static boolean containsInArray(Model_Type test, Model_Type[] array) {
+		for (Model_Type mt : array) {
+			if (mt == test) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
 }

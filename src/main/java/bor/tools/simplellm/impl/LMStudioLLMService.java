@@ -141,8 +141,8 @@ public class LMStudioLLMService extends OpenAILLMService {
 	
 	protected static final String[] REASONING_MODELS = {"qwen3", "gpt-oss", "gemma"};
 
-	protected static final String DEFAULT_MODEL_NAME = "qwen3-1.7b";
-	protected static final String DEFAULT_EMBEDDING_MODEL_NAME = "snowflake";
+	protected static final String DEFAULT_COMPLETION_NAME = "qwen3-1.7b";
+	protected static final String DEFAULT_EMBEDDING_NAME = "snowflake";
 
 	static {
 		MapModels map = new MapModels();
@@ -201,8 +201,8 @@ public class LMStudioLLMService extends OpenAILLMService {
 		            .apiToken("lm-studio") // Default API key for LM Studio
 		            .baseUrl("http://localhost:1234/v1/")
 		            .registeredModelMap (defaultModelMap)
-		            .defaultEmbeddingModelName(DEFAULT_EMBEDDING_MODEL_NAME)
-		            .defaultModelName(DEFAULT_MODEL_NAME)
+		            .defaultEmbeddingModelName(DEFAULT_EMBEDDING_NAME)
+		            .defaultCompletionModelName(DEFAULT_COMPLETION_NAME)
 		            .build();
 	}
 
@@ -241,10 +241,11 @@ public class LMStudioLLMService extends OpenAILLMService {
 	 * @param config the LLM configuration containing LM Studio API settings and
 	 *               parameters
 	 */
-	public LMStudioLLMService(LLMConfig config) {		
-		super(config==null?getDefaultLLMConfig():config);
+	public LMStudioLLMService(LLMConfig config) {	
+		super(null);
+		this.config = LLMConfig.mergeConfigs(defaultLLMConfig, config);
 		// LM Studio doesn't support responses API, so disable it
-		this.useResponsesAPI = false;
+		this.useResponsesAPI = false;		
 	}
 
 	/**
@@ -339,45 +340,11 @@ public class LMStudioLLMService extends OpenAILLMService {
 	 * Since models are user-loaded, we pick a commonly available one.
 	 */
 	@Override
-	public String getDefaultModelName() {		
-		return DEFAULT_MODEL_NAME; // Fallback to common model name
+	public String getDefaultCompletionModelName() {		
+		return DEFAULT_COMPLETION_NAME; // Fallback to common model name
 	}
 	
-	/**
-	 * Resolve the model from parameters, with LM Studio-specific logic.
-	 * If no model is specified, use a default LM Studio model if available.
-	 */
-	@Override
-	protected Model resolveModel(MapParam params) throws LLMException {		
-		Model model = params.getModelObj();
-		if(model!=null)
-			return model;
 		
-		String modelName = params.getModel();
-		
-		if(model==null) {
-			if(modelName!=null && modelName.isEmpty()==false) {
-				model = getLLMConfig().getModel(modelName);
-				if(model!=null) {
-					params.modelObj(model);
-				}
-			}
-		}
-		// not found yet! Try default model
-		if (model == null) {
-			// try default model
-			logger.debug("No model specified, using default model: " + getDefaultModelName());
-			model = getLLMConfig().getModel(getDefaultModelName());
-			if(model!=null) {
-				params.modelObj(model);
-			}
-		}
-		if(model==null) {
-			throw new LLMException("No model specified and no default model available");
-		}
-		return model;
-	}
-	
 	/**
 	 * Override chatCompletion to handle LM Studio-specific reasoning prompts.
 	 * LM Studio models may require specific prompt structures for reasoning tasks.
@@ -483,7 +450,7 @@ public class LMStudioLLMService extends OpenAILLMService {
 		}
 		// Ensure model is set
 		if (params.getModel() == null) {
-			params.model(getDefaultModelName());
+			params.model(getDefaultCompletionModelName());
 		}
 		
 		Model model = resolveModel(params);
@@ -608,5 +575,20 @@ public class LMStudioLLMService extends OpenAILLMService {
 	@Override
 	public SERVICE_PROVIDER getServiceProvider() {		
 		return SERVICE_PROVIDER.LM_STUDIO;
+	}
+	
+	
+	/**
+	 * String representation of the This service instance.
+	 */
+	public String toString() {
+		StringBuilder sb = new StringBuilder(256);
+		sb.append("LLMStudioService using base URL: ")
+		.append(getLLMConfig().getBaseUrl())
+		.append(",\n\t Default Completion Model: ")
+		.append(getDefaultCompletionModelName())
+		.append(",\n\t Default Embedding Model: ")
+		.append(getDefaultEmbeddingModelName());		
+		return sb.toString();
 	}
 }

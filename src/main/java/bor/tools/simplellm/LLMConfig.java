@@ -100,17 +100,19 @@ public class LLMConfig {
 	 * </p>
 	 */
 	@Builder.Default
-	private MapModels registeredModelMap = new MapModels(); // class model
+	private MapModels registeredModelMap = new MapModels(); 
+	
+	
 
 	/**
-	 * The default model name to use when no specific model is requested.
+	 * The default completion model name to use when no specific model is requested.
 	 * <p>
 	 * This should correspond to one of the keys in the {@link #registeredModelMap}.
 	 * If not set, the application may choose a default behavior (e.g., throw an
 	 * error or use a predefined fallback model).
 	 * </p>
 	 */
-	private String defaultModelName;
+	private String defaultCompletionModelName;
 	
 	/**
 	 * The default embedding model name to use for generating embeddings.
@@ -150,11 +152,16 @@ public class LLMConfig {
 	 * name or alias.
 	 * </p>
 	 * 
-	 * @param string the model name or alias
+	 * @param modelName the model name or alias
 	 * 
 	 * @return the corresponding {@link Model} if found, otherwise null
-	 */	public Model getModel(String string) {
-		return registeredModelMap.getModel(string);
+	 */	
+	public Model getRegisteredModel(String modelName) {
+		 var model = registeredModelMap.getModel(modelName);
+		 if (model == null) {
+			 registeredModelMap.getBestMatchName(modelName);
+		 }
+		 return model;
 	}
 	 
 	 /**
@@ -207,20 +214,18 @@ public class LLMConfig {
 	 * @return merged parameters with defaults applied
 	 */
 	public MapParam mergeWithDefaults(MapParam params) {
-		if (defaultParams == null && params == null) {
-			return new MapParam();
-		}
-		if (params == null) {
-			return new MapParam(defaultParams);
-		}
-		if (defaultParams == null) {
-			return params;
-		}
-		// Merge: start with defaults, then overlay params
-		MapParam merged = new MapParam(defaultParams);
-		merged.putAll(params);
-		return merged;
+	    if (defaultParams == null) {
+	        return params != null ? params : new MapParam();
+	    }
+	    if (params == null) {
+	        return new MapParam(defaultParams);
+	    }
+	    // Merge: start with defaults, then overlay params
+	    MapParam merged = new MapParam(defaultParams);
+	    merged.putAll(params);
+	    return merged;
 	}
+
 	
 	/**
 	 * Creates a deep copy of this LLMConfig instance.
@@ -232,8 +237,7 @@ public class LLMConfig {
 	 * 
 	 * @return a new LLMConfig instance that is a deep copy of this instance
 	 */
-	public LLMConfig clone() {
-		
+	public LLMConfig clone() {		
 		MapModels clonedModelMap = new MapModels();
 		for (var entry : this.registeredModelMap.entrySet()) {
 			clonedModelMap.put(entry.getKey(), entry.getValue().clone());
@@ -244,10 +248,61 @@ public class LLMConfig {
 				.apiTokenEnvironment(this.apiTokenEnvironment)
 				.additionalProperties(new LinkedHashMap<>(this.additionalProperties))
 				.registeredModelMap(clonedModelMap)
-				.defaultModelName(this.defaultModelName)
+				.defaultCompletionModelName(this.defaultCompletionModelName)
 				.defaultEmbeddingModelName(this.defaultEmbeddingModelName)
 				.defaultParams(this.defaultParams==null ? null : new MapParam(this.defaultParams))
 				.build();
 	}
+	
+	/**
+	 * 
+	 * @param base
+	 * @param override
+	 * @return
+	 */
+	public static LLMConfig mergeConfigs(LLMConfig base, LLMConfig override) {
+		if (override == null) {
+		        return base.clone();
+		}
+		
+	    if (base == null) {
+	        return override != null ? override.clone() : null;
+	    }
+	   
+	    
+	    LLMConfigBuilder builder = LLMConfig.builder()
+	            .baseUrl(override.getBaseUrl() != null ? override.getBaseUrl() : base.getBaseUrl())
+	            .apiToken(override.getApiToken() != null ? override.getApiToken() : base.getApiToken())
+	            .apiTokenEnvironment(override.getApiTokenEnvironment() != null ? override.getApiTokenEnvironment() : base.getApiTokenEnvironment())
+	            .additionalProperties(new LinkedHashMap<>(base.getAdditionalProperties()));
+	    
+	    // Merge additionalProperties
+	    if (override.getAdditionalProperties() != null && override.getAdditionalProperties().size() > 0) {	    	
+	    	 var extraProps = new LinkedHashMap<String,Object>();
+	    	 if (base.getAdditionalProperties() != null) {
+	    		 extraProps.putAll(base.getAdditionalProperties());
+	    	 }
+	    	 extraProps.putAll(override.getAdditionalProperties());	    	 
+	         builder.additionalProperties(extraProps);
+	    }
+	    
+	    // Merge registeredModelMap
+	    MapModels mergedModelMap = new MapModels();
+	    mergedModelMap.putAll(base.getRegisteredModelMap());
+	    mergedModelMap.putAll(override.getRegisteredModelMap());
+	    builder.registeredModelMap(mergedModelMap);
+	    
+	    builder.defaultCompletionModelName(override.getDefaultCompletionModelName() != null ? override.getDefaultCompletionModelName() : base.getDefaultCompletionModelName());
+	    builder.defaultEmbeddingModelName(override.getDefaultEmbeddingModelName() != null ? override.getDefaultEmbeddingModelName() : base.getDefaultEmbeddingModelName());
+	    
+	    // Merge defaultParams
+	    if (base.getDefaultParams() != null || override.getDefaultParams() != null) {
+	        MapParam mergedParams = base.mergeWithDefaults(override.getDefaultParams());
+	        builder.defaultParams(mergedParams);
+	    }
+	    
+	    return builder.build();
+	}
+	
 }
 // LLMConfig

@@ -122,7 +122,7 @@ public class WebSearchFactoryExample {
         System.out.println("\nMethod 2: createPerplexity(config)");
         LLMConfig customConfig = LLMConfig.builder()
             .apiTokenEnvironment("PERPLEXITY_API_KEY")
-            .defaultModelName("sonar-pro")
+            .defaultCompletionModelName("sonar-pro")
             .defaultParams(new MapParam().temperature(0.5f))
             .build();
         WebSearch search2 = WebSearchFactory.createPerplexity(customConfig);
@@ -179,7 +179,7 @@ public class WebSearchFactoryExample {
 
         LLMConfig config = LLMConfig.builder()
             .apiTokenEnvironment("PERPLEXITY_API_KEY")
-            .defaultModelName("sonar-pro")
+            .defaultCompletionModelName("sonar-pro")
             .defaultParams(academicDefaults)
             .build();
 
@@ -423,7 +423,7 @@ public class WebSearchFactoryExample {
 
         LLMConfig config = LLMConfig.builder()
             .apiTokenEnvironment("PERPLEXITY_API_KEY")
-            .defaultModelName("sonar-pro")
+            .defaultCompletionModelName("sonar-pro")
             .defaultParams(researchDefaults)
             .build();
 

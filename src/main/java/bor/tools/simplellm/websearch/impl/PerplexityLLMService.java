@@ -164,7 +164,7 @@ public class PerplexityLLMService implements LLMProvider, WebSearch {
                 .apiTokenEnvironment("PERPLEXITY_API_KEY")
                 .baseUrl(DEFAULT_BASE_URL)
                 .registeredModelMap(map)
-                .defaultModelName(DEFAULT_MODEL)
+                .defaultCompletionModelName(DEFAULT_MODEL)
                 .defaultParams(defaultParams)
                 .build();
     }
@@ -244,8 +244,8 @@ public class PerplexityLLMService implements LLMProvider, WebSearch {
     }
 
     @Override
-    public String getDefaultModelName() {
-        String defaultName = config.getDefaultModelName();
+    public String getDefaultCompletionModelName() {
+        String defaultName = config.getDefaultCompletionModelName();
         if (defaultName == null || defaultName.isEmpty()) {
             return DEFAULT_MODEL;
         }
@@ -254,7 +254,7 @@ public class PerplexityLLMService implements LLMProvider, WebSearch {
 
     @Override
     public boolean isModelType(String modelName, Model_Type type) {
-        Model model = config.getModel(modelName);
+        Model model = config.getRegisteredModel(modelName);
         if (model == null) {
             return false;
         }
@@ -268,7 +268,7 @@ public class PerplexityLLMService implements LLMProvider, WebSearch {
 
         // Ensure model is set
         if (params.getModel() == null) {
-            params.model(getDefaultModelName());
+            params.model(getDefaultCompletionModelName());
         }
 
         // Build request payload
@@ -292,7 +292,7 @@ public class PerplexityLLMService implements LLMProvider, WebSearch {
             if (chatModel != null) {
                 params.model(chatModel.toString());
             } else {
-                params.model(getDefaultModelName());
+                params.model(getDefaultCompletionModelName());
             }
         }
 
@@ -344,7 +344,7 @@ public class PerplexityLLMService implements LLMProvider, WebSearch {
 
         // Ensure model is set
         if (params.getModel() == null) {
-            params.model(getDefaultModelName());
+            params.model(getDefaultCompletionModelName());
         }
 
         // Enable streaming
@@ -377,7 +377,7 @@ public class PerplexityLLMService implements LLMProvider, WebSearch {
             if (chatModel != null) {
                 params.model(chatModel.toString());
             } else {
-                params.model(getDefaultModelName());
+                params.model(getDefaultCompletionModelName());
             }
         }
 

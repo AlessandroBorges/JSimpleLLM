@@ -197,12 +197,28 @@ public interface LLMProvider extends IModelManager, IEmbeddingOperations,
 	@Override
 	default float[] embeddings(String texto, Model model) throws LLMException {
 		MapParam params = new MapParam();
-		params.put("model", model);		
-		if (model != null && model.getTypes().contains(Model_Type.EMBEDDING)) {
+		if (model == null) {
+			String modelName = getDefaultEmbeddingModelName();
+			if(modelName==null) {
+				throw new LLMException("Embedding Model name nod defined. "
+							+ "Try LLMProvider#setDefaultEmbeddingModel(String)");
+			}else {
+				params.model(modelName);
+			}
+		} else {
+			params.modelObj(model);
+			if ((model != null && model.getTypes().contains(Model_Type.EMBEDDING))) {
+				return embeddings(Embeddings_Op.DEFAULT, texto, params);
+			}
+		}
+
+		if (params.getModel() != null) {
 			return embeddings(Embeddings_Op.DEFAULT, texto, params);
 		} else {
-			throw new LLMException("Model " + (model != null ? model.getName() : "null") + " is not an EMBEDDING model");
-		}		
+			throw new LLMException("Model "
+			            + (model != null ? model.getName() : "null")
+			            + " is not an EMBEDDING model");
+		}
 	}
 	
 	/**
@@ -524,34 +540,58 @@ public interface LLMProvider extends IModelManager, IEmbeddingOperations,
 	LLMConfig getLLMConfig();
 
 	/**
-	 * Set the default model name to be used when no specific model is provided.
+	 * Set the default <b>completion</b> model name to be used when no specific model is provided.
 	 * @param modelName
 	 */
-    default void setDefaultModelName(String modelName) {
+    default void setDefaultCompletionModelName(String modelName) {
     	if(getLLMConfig()!=null) {
-			getLLMConfig().setDefaultModelName(modelName);
+			getLLMConfig().setDefaultCompletionModelName(modelName);
 		} else {
 		 throw new IllegalStateException("LLMConfig is not set, cannot set default model name");
 		}
     }
     
     /**
-     * Returns the default model name to be used when no specific model is provided.
+     * Returns the default <b>completion</b> model name to be used when no specific model is provided.
      * @return
      */
-	default String getDefaultModelName() {
+	default String getDefaultCompletionModelName() {
 		if(getLLMConfig()!=null) {
-			return getLLMConfig().getDefaultModelName();
+			return getLLMConfig().getDefaultCompletionModelName();
+		}
+		return null;
+	}
+	
+	/**
+	 * Set the default <b>embedding</b> model name to be used when no specific model is provided.
+	 * @param modelName
+	 */
+    default void setDefaultEmbeddingModelName(String modelName) {
+    	if(getLLMConfig()!=null) {
+			getLLMConfig().setDefaultEmbeddingModelName(modelName);
+		} else {
+		 throw new IllegalStateException("LLMConfig is not set, cannot set default model name");
+		}
+    }
+    
+    /**
+     * Returns the default <b>embedding</b> model name to be used when no specific model is provided.
+     * @return
+     */
+	default String getDefaultEmbeddingModelName() {
+		if(getLLMConfig()!=null) {
+			return getLLMConfig().getDefaultEmbeddingModelName();
 		}
 		return null;
 	}
 
 	/**
 	 * Finds the model name from the provided parameters.
+	 * May return the default model name if none is specified in params.
 	 * 
-	 * @param params
+	 * @param params - parameters that may contain the model name
 	 * 
-	 * @return
+	 * @return the model name to use
 	 */
 	default String findModel(MapParam params) {
 		if (params != null && params.containsKey("model")) {
@@ -563,7 +603,7 @@ public interface LLMProvider extends IModelManager, IEmbeddingOperations,
 				}
 			}
 		}
-		return getDefaultModelName();
+		return getDefaultCompletionModelName();
 	}
 
 	/**
@@ -648,7 +688,7 @@ public interface LLMProvider extends IModelManager, IEmbeddingOperations,
 	 */
 	default boolean isModelType(String modelName, Model_Type type) {
 		LLMConfig config = getLLMConfig();
-		Model     model  = config.getModel(modelName);
+		Model     model  = config.getRegisteredModel(modelName);
 		return isModelType(model, type);
 	}
 	

@@ -97,8 +97,8 @@ public class OpenAILLMService implements LLMProvider {
 	                        + "If you don't know the answer, just say that you don't know. "
 	                        + "Don't try to make up an answer.";
 
-	private static final String DEFAULT_MODEL = "gpt-4.1-mini";
-	private static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small";
+	protected static final String DEFAULT_COMPLETION_MODEL = "gpt-4.1-mini";
+	protected static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small";
 
 	private static final LLMConfig defaultLLMConfig;
 
@@ -157,12 +157,16 @@ public class OpenAILLMService implements LLMProvider {
 		            BATCH,
 		            TOOLS,
 		            RESPONSES_API);
-		Model gpt_4_1     = new Model("gpt-4.1", 1047576, LANGUAGE, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
-		Model gpt_4_mini  =
-		            new Model("gpt-4.1-mini", 1047576, LANGUAGE, FAST, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
 		
-		Model gpt_4o = new Model("gpt-4o", 128000, LANGUAGE, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
-		Model gpt_4o_mini = new Model("gpt-4o-mini", 128000, LANGUAGE, FAST, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
+		Model gpt_4_1     = new Model("gpt-4.1", 1047576,
+		                              LANGUAGE, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
+		Model gpt_4_mini  = new Model("gpt-4.1-mini", 1047576, 
+		                              LANGUAGE, FAST, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
+		
+		Model gpt_4o = new Model("gpt-4o", 128000, 
+		                         LANGUAGE, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
+		Model gpt_4o_mini = new Model("gpt-4o-mini", 128000, 
+		                              LANGUAGE, FAST, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
 		
 		Model gpt_o3_mini = new Model("o3-mini",
 		            128000,
@@ -207,10 +211,13 @@ public class OpenAILLMService implements LLMProvider {
 		            .baseUrl("https://api.openai.com/v1/")
 		            .registeredModelMap(map)
 		            .defaultEmbeddingModelName(DEFAULT_EMBEDDING_MODEL)
-		            .defaultModelName(DEFAULT_MODEL)	 
+		            .defaultCompletionModelName(DEFAULT_COMPLETION_MODEL)	 
 		            .build();
 	}
 
+	/**
+	 * The LLM configuration for this service instance.
+	 */
 	protected LLMConfig config;
 
 	protected boolean useResponsesAPI = false;
@@ -249,9 +256,9 @@ public class OpenAILLMService implements LLMProvider {
 	 * @param config the LLM configuration containing API settings and parameters
 	 */
 	public OpenAILLMService(LLMConfig config) {
-		if(config==null)
-			config = getDefaultLLMConfig();
-		this.config = config;
+		//merge configs
+		this.config = LLMConfig.mergeConfigs(getDefaultLLMConfig(), config);
+					
 		this.jsonMapper = new OpenAIJsonMapper();
 		this.streamingUtil = new StreamingUtil(this.jsonMapper);
 		this.httpClient = new OkHttpClient.Builder()
@@ -261,6 +268,8 @@ public class OpenAILLMService implements LLMProvider {
 		            .callTimeout(300, TimeUnit.SECONDS)  // Overall call timeout for long streams
 		            .build();
 	}
+	
+	
 
 	/**
 	 * Retrieves the default LLM configuration for OpenAI services.
@@ -938,31 +947,54 @@ public class OpenAILLMService implements LLMProvider {
 	 * 
 	 * @return the resolved model name
 	 */
-	protected Model resolveModel(MapParam params) throws LLMException {		
+	protected Model resolveModel(MapParam params, Model_Type...types) throws LLMException {		
 		Model model = params.getModelObj();		
 		if (model != null) {
 			return model;		
-		}
-		else {
-			String modelObj = params.getModel();
-			String modelName = modelObj != null ? modelObj : getDefaultModelName();
-			Model  m         = getLLMConfig().getModel(modelName);
+		}		
+		else 
+		{
+			boolean isEmbeddingModel = types != null 
+						&& Model_Type.containsInArray(EMBEDDING, types);
+			
+			String modeNameProvided = params.getModel();
+			String defaultModelName = isEmbeddingModel
+			            ? getDefaultEmbeddingModelName()
+			            : getDefaultCompletionModelName();
+			
+			String modelName = modeNameProvided != null ? modeNameProvided : defaultModelName;
+			Model m =  getLLMConfig().getRegisteredModelMap().getBestMatchName(modelName);
+			
+			// if model is not registered yet
 			if (m == null) {
-				logger.warn("Model {} not found in configuration, using default model {}",
-				            modelName,
-				            getDefaultModelName());
-				m = getLLMConfig().getModel(getDefaultModelName());
+				// try installed models
+				MapModels installedModels = getInstalledModels();
+				if (modelName != null) {
+					// search by the best name match
+					m = installedModels.getBestMatchName(modelName);
+				} else {
+					// search by best type match
+					var list = installedModels.getModelByTypes(types);
+					if (list != null && list.size() > 0) {
+						m = list.get(0);
+					}
+				}
+				if (m == null) {
+					logger.warn("Model {} not found in configuration, using default model {}",
+					            modelName,
+					            getDefaultCompletionModelName());
+					m = getLLMConfig().getRegisteredModel(getDefaultCompletionModelName());
+				}
 			}
 			if (m == null) {
 				throw new LLMIllegalArgumentException ("Model "
 				            + modelName
 				            + " not found in configuration, and default model "
-				            + getDefaultModelName()
+				            + getDefaultCompletionModelName()
 				            + " also not found.");
 			}
 			return m;
 		}
-
 	}
 
 	/**
@@ -1182,13 +1214,14 @@ public class OpenAILLMService implements LLMProvider {
 		if(modelName == null) {
 			if(model==null) {
 				// try chat's model then default model name
-				modelName = chat.getModel()!=null? chat.getModel() : getLLMConfig().getDefaultModelName();
+				modelName = chat.getModel()!=null? chat.getModel() : 
+					getLLMConfig().getDefaultCompletionModelName();
 			}
 			else
 				modelName = model.getName();
 		}		
 		if(model==null)	{
-			model = getLLMConfig().getModel(modelName);
+			model = getLLMConfig().getRegisteredModel(modelName);
 			if(model==null) {
 				throw new LLMException("Model "+modelName+" not found in configuration.");
 			}
@@ -1307,18 +1340,36 @@ public class OpenAILLMService implements LLMProvider {
 	/**
 	 * {@inheritDoc}
 	 */
+	// Java
 	@Override
-	public String getDefaultModelName() {
-		var config = getLLMConfig();
-		if(config==null) {
-			return DEFAULT_MODEL;
-		}
-		if(config.getDefaultModelName()==null) {
-			config.setDefaultModelName(DEFAULT_MODEL);
-		}		
-		Model txt = config.getRegisteredModelMap().getModel(DEFAULT_MODEL);
-		return txt != null ? txt.getName() : DEFAULT_MODEL;
+	public String getDefaultCompletionModelName() {
+	    final String fallback = DEFAULT_COMPLETION_MODEL;
+
+	    LLMConfig cfg = getLLMConfig();
+	    if (cfg == null) {
+	        return fallback;
+	    }
+
+	    String desired = cfg.getDefaultCompletionModelName();
+	    if (desired == null || desired.isBlank()) {
+	        cfg.setDefaultCompletionModelName(fallback);
+	        desired = fallback;
+	    }
+
+	    MapModels registry = cfg.getRegisteredModelMap();
+	    if (registry == null || registry.isEmpty()) {
+	        return desired;
+	    }
+
+	    Model model = registry.getModel(desired);
+	    if (model != null) {
+	        return model.getName();
+	    }
+
+	    model = registry.getModel(fallback);
+	    return model != null ? model.getName() : fallback;
 	}
+
 		
 
 	// ================== IMAGE GENERATION METHODS ==================
@@ -1488,7 +1539,8 @@ public class OpenAILLMService implements LLMProvider {
 	 * @throws LLMException if model is not specified or invalid
 	 */
 	private ModelEmbedding validateAndGetEmbeddingModel(MapParam params) throws LLMException {
-		Object modelObj = params.getModelObj();
+		Object modelObj = params.getModelObj() == null ? params.getModel() : params.getModelObj();
+		
 		if(modelObj == null) {
 			modelObj = getLLMConfig().getDefaultEmbeddingModelName();
 			if(modelObj == null) {
@@ -1499,7 +1551,7 @@ public class OpenAILLMService implements LLMProvider {
 		// @TODO fix the modelObj - it may fail if modelObj is not a String
 		var model = modelObj instanceof ModelEmbedding ? 
 					(ModelEmbedding) modelObj 
-					: getLLMConfig().getModel(modelObj.toString());
+					: getLLMConfig().getRegisteredModel(modelObj.toString());
 		
 		// Use default model if not specified
 		if (model == null || model.getName().trim().isEmpty()) {
@@ -1540,4 +1592,18 @@ public class OpenAILLMService implements LLMProvider {
 		return isOpenAIEndpoint() ? "base64" : null;
 	}
 	
+	
+	/**
+	 * String representation of the This service instance.
+	 */
+	public String toString() {
+		StringBuilder sb = new StringBuilder(256);
+		sb.append("OpenAI compatible Service using base URL: ")
+		.append(getLLMConfig().getBaseUrl())
+		.append(",\n\t Default Completion Model: ")
+		.append(getDefaultCompletionModelName())
+		.append(",\n\t Default Embedding Model: ")
+		.append(getDefaultEmbeddingModelName());		
+		return sb.toString();
+	}
 }

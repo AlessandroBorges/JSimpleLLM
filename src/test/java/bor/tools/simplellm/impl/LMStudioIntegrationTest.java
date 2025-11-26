@@ -250,7 +250,7 @@ class LMStudioIntegrationTest extends LMStudioLLMServiceTestBase {
 		            + lmStudioService.isModelType(firstModel, bor.tools.simplellm.Model_Type.VISION));
 
 		// Test default model selection
-		String defaultModel = lmStudioService.getDefaultModelName();
+		String defaultModel = lmStudioService.getDefaultCompletionModelName();
 		assertNotNull(defaultModel);
 		System.out.println("2. Default model: "
 		            + defaultModel);

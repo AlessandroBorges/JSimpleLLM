@@ -97,13 +97,13 @@ public interface IModelManager {
      * Set the default model name to be used when no specific model is provided.
      * @param modelName default model name
      */
-    void setDefaultModelName(String modelName);
+    void setDefaultCompletionModelName(String modelName);
     
     /**
      * Returns the default model name.
      * @return default model name
      */
-    String getDefaultModelName();
+    String getDefaultCompletionModelName();
     
     /**
      * Finds the model name from the provided parameters.
