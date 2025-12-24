@@ -169,15 +169,15 @@ public class OpenAILLMService implements LLMProvider {
 		                              LANGUAGE, FAST, VISION, CODING, BATCH, TOOLS, RESPONSES_API);
 		
 		Model gpt_o3_mini = new Model("o3-mini",
-		            128000,
-		            GPT5_CLASS,
-		            REASONING,
-		            FAST,
-		            LANGUAGE,
-		            CODING,
-		            BATCH,
-		            TOOLS,
-		            RESPONSES_API);
+							            128000,
+							            GPT5_CLASS,
+							            REASONING,
+							            FAST,
+							            LANGUAGE,
+							            CODING,
+							            BATCH,
+							            TOOLS,
+							            RESPONSES_API);
 
 		// Image Generation Models (DALL-E)
 		Model dall_e_3 = new Model("dall-e-3", 4000, IMAGE, VISION); // 4000 character prompt limit

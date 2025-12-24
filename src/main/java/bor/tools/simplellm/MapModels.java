@@ -158,6 +158,12 @@ public class MapModels extends LinkedHashMap<String, Model> {
 		if (partialName == null || partialName.isEmpty()) {
 			return null;
 		}
+		// first try exact match or alias
+		Model exact = getModel(partialName);
+		if( exact != null ) {
+			return exact;
+		}
+		
 		String normPartial = normalizeModelName(partialName);
 		
 		Set<String> keys = this.keySet();

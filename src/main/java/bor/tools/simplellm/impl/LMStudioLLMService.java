@@ -137,7 +137,7 @@ public class LMStudioLLMService extends OpenAILLMService {
 			 ;
 	
 	protected static final MapModels defaultModelMap;
-	protected static final LLMConfig defaultLLMConfig;
+	private static final LLMConfig defaultLLMConfig;
 	
 	protected static final String[] REASONING_MODELS = {"qwen3", "gpt-oss", "gemma"};
 
@@ -218,7 +218,7 @@ public class LMStudioLLMService extends OpenAILLMService {
 	 * @return a clone of default LLMConfig instance for LM Studio
 	 */
 	public static LLMConfig getDefaultLLMConfig() { 
-		return defaultLLMConfig.clone(); 
+		return LMStudioLLMService.defaultLLMConfig.clone(); 
 	}
 
 	/**
@@ -243,7 +243,7 @@ public class LMStudioLLMService extends OpenAILLMService {
 	 */
 	public LMStudioLLMService(LLMConfig config) {	
 		super(null);
-		this.config = LLMConfig.mergeConfigs(defaultLLMConfig, config);
+		this.config = LLMConfig.mergeConfigs(LMStudioLLMService.defaultLLMConfig, config);
 		// LM Studio doesn't support responses API, so disable it
 		this.useResponsesAPI = false;		
 	}

@@ -111,4 +111,20 @@ public interface IModelManager {
      * @return model name
      */
     String findModel(MapParam params);
+    
+    /**
+     * Get the Model by name
+     * 
+     * @param modelName - the name of model
+     * 
+     * @return the Model instance matching the suplied name
+     * @throws LLMException
+     */
+    default Model findModelByName(String modelName) throws LLMException {
+    	Model model = getInstalledModels().get(modelName);
+    	if (model == null) {
+    		model = getRegisteredModels().getBestMatchName(modelName);
+    	}
+    	return model;
+    }
 }

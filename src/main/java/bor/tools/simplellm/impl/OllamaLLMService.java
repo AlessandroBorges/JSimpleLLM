@@ -85,7 +85,7 @@ public class OllamaLLMService extends LMStudioLLMService {
 	 */
 	public OllamaLLMService(LLMConfig config) {
 		super(null);
-		config = LLMConfig.mergeConfigs(defaultLLMConfig, config);
+		this.config = LLMConfig.mergeConfigs(OllamaLLMService.defaultLLMConfig, config);
 		// Ollama doesn't support responses API, so disable it
 		this.useResponsesAPI = false;		
 	}
@@ -101,7 +101,7 @@ public class OllamaLLMService extends LMStudioLLMService {
 	 * @return the default LLMConfig instance for Ollama
 	 */
 	public static LLMConfig getDefaultLLMConfig() { 
-		return defaultLLMConfig.clone(); 
+		return OllamaLLMService.defaultLLMConfig.clone(); 
 	}
 
 	/**
@@ -123,8 +123,7 @@ public class OllamaLLMService extends LMStudioLLMService {
 		if (defaultModel != null && !defaultModel.trim().isEmpty()) {
 			return defaultModel;
 		}
-		
-		
+				
 		MapModels models = getLLMConfig().getRegisteredModelMap();
 		if (models == null || models.isEmpty()) {
 			logger.warn("Warning: No models configured for Ollama service.");
