@@ -54,6 +54,9 @@ public class LLMServiceFactory {
 		if (provider == null) {
 			throw new IllegalArgumentException("Provider must not be null");
 		}
+		config = (config == null) ? getDefaultLLMConfig(provider) : config;
+		config = config.clone();
+		config.setServiceProvider(provider);
 		
 		switch (provider) {
 		case OPENAI:

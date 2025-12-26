@@ -583,7 +583,7 @@ public class LMStudioLLMService extends OpenAILLMService {
 	 */
 	public String toString() {
 		StringBuilder sb = new StringBuilder(256);
-		sb.append("LLMStudioService using base URL: ")
+		sb.append("LMStudioService using base URL: ")
 		.append(getLLMConfig().getBaseUrl())
 		.append(",\n\t Default Completion Model: ")
 		.append(getDefaultCompletionModelName())

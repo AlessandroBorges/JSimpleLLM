@@ -3,6 +3,8 @@ package bor.tools.simplellm;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Builder;
 import lombok.Data;
 
@@ -42,6 +44,15 @@ import lombok.Data;
 @Data
 @Builder
 public class LLMConfig {
+	
+	/**
+	 * The service provider type for the LLM.
+	 * <p>
+	 * This enum indicates which LLM service provider is being used, such as
+	 * OpenAI, Anthropic, etc.
+	 * </p>
+	 */	
+	private SERVICE_PROVIDER serviceProvider;
 
 	/**
 	 * The base URL for the LLM API endpoint.
@@ -226,6 +237,15 @@ public class LLMConfig {
 	    return merged;
 	}
 
+	/**
+	 * Retrieves the name of the service provider.
+	 * 
+	 * @return the service provider name as a String, or null if not set
+	 */
+	@JsonIgnore
+	public String getServiceProviderName() {
+		return serviceProvider != null ? serviceProvider.name() : null;
+	}
 	
 	/**
 	 * Creates a deep copy of this LLMConfig instance.
@@ -243,21 +263,22 @@ public class LLMConfig {
 			clonedModelMap.put(entry.getKey(), entry.getValue().clone());
 		}
 		return LLMConfig.builder()
-				.baseUrl(this.baseUrl)
-				.apiToken(this.apiToken)
-				.apiTokenEnvironment(this.apiTokenEnvironment)
-				.additionalProperties(new LinkedHashMap<>(this.additionalProperties))
-				.registeredModelMap(clonedModelMap)
-				.defaultCompletionModelName(this.defaultCompletionModelName)
-				.defaultEmbeddingModelName(this.defaultEmbeddingModelName)
-				.defaultParams(this.defaultParams==null ? null : new MapParam(this.defaultParams))
-				.build();
+					.serviceProvider(this.serviceProvider)
+					.baseUrl(this.baseUrl)
+					.apiToken(this.apiToken)
+					.apiTokenEnvironment(this.apiTokenEnvironment)
+					.additionalProperties(new LinkedHashMap<>(this.additionalProperties))
+					.registeredModelMap(clonedModelMap)
+					.defaultCompletionModelName(this.defaultCompletionModelName)
+					.defaultEmbeddingModelName(this.defaultEmbeddingModelName)
+					.defaultParams(this.defaultParams==null ? null : new MapParam(this.defaultParams))
+					.build();
 	}
 	
 	/**
-	 * 
-	 * @param base
-	 * @param override
+	 * Merges two LLMConfig instances.
+	 * @param base - base config
+	 * @param override - override config
 	 * @return
 	 */
 	public static LLMConfig mergeConfigs(LLMConfig base, LLMConfig override) {
@@ -271,6 +292,7 @@ public class LLMConfig {
 	   
 	    
 	    LLMConfigBuilder builder = LLMConfig.builder()
+	    	    .serviceProvider(override.getServiceProvider() != null ? override.getServiceProvider() : base.getServiceProvider())
 	            .baseUrl(override.getBaseUrl() != null ? override.getBaseUrl() : base.getBaseUrl())
 	            .apiToken(override.getApiToken() != null ? override.getApiToken() : base.getApiToken())
 	            .apiTokenEnvironment(override.getApiTokenEnvironment() != null ? override.getApiTokenEnvironment() : base.getApiTokenEnvironment())
