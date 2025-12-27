@@ -8,6 +8,8 @@ set "JSIMPLELLM_PATH=F:\1-ProjetosIA\github\JSimpleLLM"
 set "JAR_PATH=%JSIMPLELLM_PATH%\target\JSimpleLLM-0.0.1-SNAPSHOT.jar"
 set "POM_PATH=%JSIMPLELLM_PATH%\pom.xml"
 
+del /f "%JAR_PATH%" >nul 2>&1
+
 REM Verificar se JAR existe
 if not exist "%JAR_PATH%" (
     echo JAR nao encontrado. Compilando...
