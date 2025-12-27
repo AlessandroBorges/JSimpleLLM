@@ -135,7 +135,7 @@ public class OllamaLLMService extends LMStudioLLMService {
 				e.printStackTrace();
 			}
 		}	
-		var  name = models.getModel(DEFAULT_MODEL);
+		var  name = models==null? null : models.getModel(DEFAULT_MODEL);
 		if (name == null) {
 			// If default model not found, fallback to first available model
 			logger.warn("Warning: Default model '"
@@ -143,7 +143,7 @@ public class OllamaLLMService extends LMStudioLLMService {
 			            + "' not found in configuration. "
 			            + "Falling back to first available model.");
 			// pick first language model
-			name = models.values()
+			name = models==null? null : models.values()
 			            .stream()
 			            .filter(model -> isModelType(model.getName(), LANGUAGE))
 			            .findFirst()
@@ -151,8 +151,9 @@ public class OllamaLLMService extends LMStudioLLMService {
 		}
 		if(name!=null) {
 			setDefaultCompletionModelName(name.getName());
-		}
-		return name.toString();
+			return name.toString();
+		} else
+			return null;
 	}
 	
 	

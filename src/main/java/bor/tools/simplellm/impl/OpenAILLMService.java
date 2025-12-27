@@ -295,8 +295,9 @@ public class OpenAILLMService implements LLMProvider {
 	 * @throws LLMException if request fails
 	 */
 	protected Map<String, Object> postRequest(String endpoint, Map<String, Object> payload) throws LLMException {
+		String      url = "";
 		try {
-			String      url         = buildUrl(endpoint);
+			url = buildUrl(endpoint);
 			String      jsonPayload = jsonMapper.toJson(payload);
 			RequestBody body        = RequestBody.create(jsonPayload, JSON_MEDIA_TYPE);
 
@@ -312,7 +313,7 @@ public class OpenAILLMService implements LLMProvider {
 
 		} catch (IOException e) {
 			e.printStackTrace();
-			logger.error("Network error during API request: {}", e.getMessage(), e);
+			logger.error("Network error on call to URL {} \nduring API request: {} \n {}", url,  e.getMessage(), e);
 			throw new LLMNetworkException("Network error during API request: "
 			            + e.getMessage(), e);
 		}
