@@ -255,14 +255,14 @@ public interface LLMProvider extends IModelManager, IEmbeddingOperations,
 	 * operation.
 	 * 
 	 * @param op - Embedding operations 
-	 * @param texto - text to embed
-	 * @param params additional parameters such as model name, vector size, etc.
+	 * @param text - text to embed
+	 * @param params - additional parameters such as model name, vector size, etc.
 	 * 
 	 * @return an normalized array of floats representing the text embedding
 	 * 
 	 * @throws LLMException
 	 */
-	float[] embeddings(Embeddings_Op op, String texto, MapParam params) throws LLMException;
+	float[] embeddings(Embeddings_Op op, String text, MapParam params) throws LLMException;
 
 	/**
 	 * Generates embeddings for an array of texts using the specified model and

@@ -62,23 +62,11 @@ public class LLMServiceFactory {
 		case OPENAI:
 			return createOpenAI(config);
 		case OLLAMA:
-			if (config == null) {
-				return createOllama();
-			} else {
 				return createOllama(config);
-			}
 		case LM_STUDIO:
-			if (config == null) {
-				return createLMStudio();
-			} else {
 				return createLMStudio(config);
-			}
 		case PERPLEXITY:
-			if (config == null) {
-				return createPerplexity();
-			} else {
 				return createPerplexity(config);
-			}
 		case ANTHROPIC:
 			return createOpenAI(config); // Anthropic API is OpenAI-compatible
 			//throw new UnsupportedOperationException("Anthropic LLM service not yet implemented");

@@ -112,8 +112,7 @@ public class LLMConfig {
 	 */
 	@Builder.Default
 	private MapModels registeredModelMap = new MapModels(); 
-	
-	
+		
 
 	/**
 	 * The default completion model name to use when no specific model is requested.
@@ -309,13 +308,19 @@ public class LLMConfig {
 	    }
 	    
 	    // Merge registeredModelMap
-	    MapModels mergedModelMap = new MapModels();
-	    mergedModelMap.putAll(base.getRegisteredModelMap());
-	    mergedModelMap.putAll(override.getRegisteredModelMap());
-	    builder.registeredModelMap(mergedModelMap);
+	    {
+		    MapModels mergedModelMap = new MapModels();
+		    if( base.getRegisteredModelMap() != null && base.getRegisteredModelMap().size() > 0) {
+		    	mergedModelMap.putAll(base.getRegisteredModelMap());
+		    }
+		    if( override.getRegisteredModelMap() != null && override.getRegisteredModelMap().size() > 0) {	    mergedModelMap.putAll(override.getRegisteredModelMap());
+		    	mergedModelMap.putAll(override.getRegisteredModelMap());
+		    }	    
+		    builder.registeredModelMap(mergedModelMap);
+	    }
 	    
 	    builder.defaultCompletionModelName(override.getDefaultCompletionModelName() != null ? override.getDefaultCompletionModelName() : base.getDefaultCompletionModelName());
-	    builder.defaultEmbeddingModelName(override.getDefaultEmbeddingModelName() != null ? override.getDefaultEmbeddingModelName() : base.getDefaultEmbeddingModelName());
+	    builder.defaultEmbeddingModelName (override.getDefaultEmbeddingModelName()  != null ? override.getDefaultEmbeddingModelName()  : base.getDefaultEmbeddingModelName());
 	    
 	    // Merge defaultParams
 	    if (base.getDefaultParams() != null || override.getDefaultParams() != null) {
@@ -323,7 +328,8 @@ public class LLMConfig {
 	        builder.defaultParams(mergedParams);
 	    }
 	    
-	    return builder.build();
+	    var config = builder.build();
+	    return config;
 	}
 	
 }
