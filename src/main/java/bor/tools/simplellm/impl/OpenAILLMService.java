@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1344,31 +1345,107 @@ public class OpenAILLMService implements LLMProvider {
 	// Java
 	@Override
 	public String getDefaultCompletionModelName() {
-	    final String fallback = DEFAULT_COMPLETION_MODEL;
-
-	    LLMConfig cfg = getLLMConfig();
-	    if (cfg == null) {
-	        return fallback;
-	    }
-
-	    String desired = cfg.getDefaultCompletionModelName();
-	    if (desired == null || desired.isBlank()) {
-	        cfg.setDefaultCompletionModelName(fallback);
-	        desired = fallback;
-	    }
-
-	    MapModels registry = cfg.getRegisteredModelMap();
-	    if (registry == null || registry.isEmpty()) {
-	        return desired;
-	    }
-
-	    Model model = registry.getModel(desired);
-	    if (model != null) {
-	        return model.getName();
-	    }
-
-	    model = registry.getModel(fallback);
-	    return model != null ? model.getName() : fallback;
+		return getDefaultModel(
+			getLLMConfig().getDefaultCompletionModelName(), 
+			DEFAULT_COMPLETION_MODEL, 
+			LANGUAGE, 
+			this::setDefaultCompletionModelName
+		);
+	}
+	
+	/**
+	 * Helper method to get the default model name with comprehensive fallback logic.
+	 * This method provides a unified approach for resolving model names across all service types.
+	 * 
+	 * @param configDefault the default model name from configuration
+	 * @param fallbackName the fallback model name if not found in configuration
+	 * @param type the model type to filter by (LANGUAGE, EMBEDDING, etc.)
+	 * @param setter consumer to set the default model name in configuration
+	 * @return the resolved model name, or null if no suitable model found
+	 */
+	protected String getDefaultModel(String configDefault, String fallbackName, Model_Type type, Consumer<String> setter) {
+		// Return config default if valid
+		if (configDefault != null && !configDefault.trim().isEmpty()) {
+			return configDefault;
+		}
+		
+		LLMConfig cfg = getLLMConfig();
+		if (cfg == null) {
+			return fallbackName;
+		}
+		
+		// Get registered models
+		MapModels models = cfg.getRegisteredModelMap();
+		
+		// If no models configured, try installed models (for local servers like Ollama/LMStudio)
+		if ((models == null || models.isEmpty()) && supportsInstalledModelsQuery()) {
+			logger.warn("No models configured for {} service. Attempting to query installed models.", 
+				getServiceProvider());
+			try {
+				models = getInstalledModels();
+			} catch (LLMException e) {
+				logger.error("Error retrieving installed models from {} service.", getServiceProvider(), e);
+			}
+		}
+		
+		// If still no models, return fallback
+		if (models == null || models.isEmpty()) {
+			if (setter != null) {
+				setter.accept(fallbackName);
+			}
+			return fallbackName;
+		}
+		
+		// Try to find the fallback model in registry
+		Model model = models.getModel(fallbackName);
+		
+		// If fallback not found, find first model of the requested type
+		if (model == null) {
+			logger.warn("Default model '{}' not found in configuration. Searching for first available {} model.", 
+				fallbackName, type);
+			model = models.values()
+				.stream()
+				.filter(m -> isModelType(m.getName(), type))
+				.findFirst()
+				.orElse(null);
+		}
+		
+		// Set and return the resolved model
+		if (model != null) {
+			if (setter != null) {
+				setter.accept(model.getName());
+			}
+			return model.toString();
+		}
+		
+		// Last resort: return fallback
+		if (setter != null) {
+			setter.accept(fallbackName);
+		}
+		return fallbackName;
+	}
+	
+	/**
+	 * Indicates whether this service supports querying installed models from the server.
+	 * Override this in subclasses for local services (Ollama, LMStudio) to return true.
+	 * 
+	 * @return true if the service supports querying installed models, false otherwise
+	 */
+	protected boolean supportsInstalledModelsQuery() {
+		return false; // OpenAI doesn't support this, but Ollama/LMStudio do
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String getDefaultEmbeddingModelName() {
+		return getDefaultModel(
+			getLLMConfig().getDefaultEmbeddingModelName(), 
+			DEFAULT_EMBEDDING_MODEL, 
+			EMBEDDING, 
+			this::setDefaultEmbeddingModelName
+		);
 	}
 
 		
@@ -1598,13 +1675,7 @@ public class OpenAILLMService implements LLMProvider {
 	 * String representation of the This service instance.
 	 */
 	public String toString() {
-		StringBuilder sb = new StringBuilder(256);
-		sb.append("OpenAI compatible Service using base URL: ")
-		.append(getLLMConfig().getBaseUrl())
-		.append(",\n\t Default Completion Model: ")
-		.append(getDefaultCompletionModelName())
-		.append(",\n\t Default Embedding Model: ")
-		.append(getDefaultEmbeddingModelName());		
-		return sb.toString();
+		return String.format("OpenAI compatible Service using base URL: %s,\n\t Default Completion Model: %s,\n\t Default Embedding Model: %s",
+			getLLMConfig().getBaseUrl(), getDefaultCompletionModelName(), getDefaultEmbeddingModelName());
 	}
 }

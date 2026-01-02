@@ -15,7 +15,7 @@ import bor.tools.simplellm.exceptions.LLMException;
  * Implementation of the LLMProvider interface for Ollama's local Large Language
  * Model server.
  * <p>
- * This class extends OpenAILLMService and adapts it to work with Ollama's API
+ * This class extends LMStudioLLMService and adapts it to work with Ollama's API
  * endpoints.
  * Ollama provides a local server that runs various open-source LLM models with
  * an OpenAI-compatible API.
@@ -32,7 +32,7 @@ import bor.tools.simplellm.exceptions.LLMException;
  * 
  * @since 1.0
  * 
- * @see OpenAILLMService
+ * @see LMStudioLLMService
  */
 public class OllamaLLMService extends LMStudioLLMService {
 
@@ -113,85 +113,29 @@ public class OllamaLLMService extends LMStudioLLMService {
 	public OllamaLLMService() {
 		this(OllamaLLMService.getDefaultLLMConfig());
 	}
+	
+	/**
+	 * {@inheritDoc}
+	 * Ollama supports querying installed models from the local server.
+	 */
+	@Override
+	protected boolean supportsInstalledModelsQuery() {
+		return true;
+	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	public String getDefaultCompletionModelName() {
-		String defaultModel = getLLMConfig().getDefaultCompletionModelName();
-		if (defaultModel != null && !defaultModel.trim().isEmpty()) {
-			return defaultModel;
-		}
-				
-		MapModels models = getLLMConfig().getRegisteredModelMap();
-		if (models == null || models.isEmpty()) {
-			logger.warn("Warning: No models configured for Ollama service.");
-            // use installed models as fallback
-			try {
-				models = this.getInstalledModels();
-			} catch (LLMException e) {
-				logger.error("Error retrieving installed models from Ollama service.", e);
-				e.printStackTrace();
-			}
-		}	
-		var  name = models==null? null : models.getModel(DEFAULT_MODEL);
-		if (name == null) {
-			// If default model not found, fallback to first available model
-			logger.warn("Warning: Default model '"
-			            + DEFAULT_MODEL
-			            + "' not found in configuration. "
-			            + "Falling back to first available model.");
-			// pick first language model
-			name = models==null? null : models.values()
-			            .stream()
-			            .filter(model -> isModelType(model.getName(), LANGUAGE))
-			            .findFirst()
-			            .orElse(null);
-		}
-		if(name!=null) {
-			setDefaultCompletionModelName(name.getName());
-			return name.toString();
-		} else
-			return null;
+		return getDefaultModel(getLLMConfig().getDefaultCompletionModelName(), DEFAULT_MODEL, LANGUAGE, this::setDefaultCompletionModelName);
 	}
 	
-	
+	/**
+	 * {@inheritDoc}
+	 */
 	public String getDefaultEmbeddingModelName() {
-		String defaultModel = getLLMConfig().getDefaultEmbeddingModelName();
-		if (defaultModel != null && !defaultModel.trim().isEmpty()) {
-			return defaultModel;
-		}
-		
-		MapModels models = getLLMConfig().getRegisteredModelMap();
-		if (models == null || models.isEmpty()) {
-			logger.warn("Warning: No models configured for Ollama service.");
-			// use installed models as fallback
-			try {
-				models = this.getInstalledModels();
-			} catch (LLMException e) {
-				logger.error("Error retrieving installed models from Ollama service.", e);
-				e.printStackTrace();
-			}
-		}	
-		var  name = models.getModel(DEFAULT_EMBEDDING_MODEL);
-		if (name == null) {
-			// If default model not found, fallback to first available model
-			logger.warn("Warning: Default embedding model '"
-			            + DEFAULT_EMBEDDING_MODEL
-			            + "' not found in configuration. "
-			            + "Falling back to first available embedding model.");
-			// pick first embedding model
-			name = models.values()
-			            .stream()
-			            .filter(model -> isModelType(model.getName(), EMBEDDING))
-			            .findFirst()
-			            .orElse(null);
-		}
-		if(name!=null) {
-			setDefaultEmbeddingModelName(name.getName());
-		}
-		return name.toString();
+		return getDefaultModel(getLLMConfig().getDefaultEmbeddingModelName(), DEFAULT_EMBEDDING_MODEL, EMBEDDING, this::setDefaultEmbeddingModelName);
 	}
 
 	/**
@@ -251,14 +195,8 @@ public class OllamaLLMService extends LMStudioLLMService {
 	 * String representation of the OllamaLLMService instance.
 	 */
 	public String toString() {
-		StringBuilder sb = new StringBuilder(256);
-		sb.append("OllamaLLMService using base URL: ")
-		.append(getLLMConfig().getBaseUrl())
-		.append(",\n\t Default Completion Model: ")
-		.append(getDefaultCompletionModelName())
-		.append(",\n\t Default Embedding Model: ")
-		.append(getDefaultEmbeddingModelName());		
-		return sb.toString();
+		return String.format("OllamaLLMService using base URL: %s,\n\t Default Completion Model: %s,\n\t Default Embedding Model: %s",
+			getLLMConfig().getBaseUrl(), getDefaultCompletionModelName(), getDefaultEmbeddingModelName());
 	}
 
 }

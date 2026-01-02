@@ -337,11 +337,25 @@ public class LMStudioLLMService extends OpenAILLMService {
 
 	/**
 	 * Override getDefaultModelName to provide a sensible default for LM Studio.
-	 * Since models are user-loaded, we pick a commonly available one.
+	 * Since models are user-loaded, we use the parent's fallback logic.
 	 */
 	@Override
-	public String getDefaultCompletionModelName() {		
-		return DEFAULT_COMPLETION_NAME; // Fallback to common model name
+	public String getDefaultCompletionModelName() {
+		return getDefaultModel(
+			getLLMConfig().getDefaultCompletionModelName(), 
+			DEFAULT_COMPLETION_NAME, 
+			LANGUAGE, 
+			this::setDefaultCompletionModelName
+		);
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 * LM Studio supports querying installed models from the local server.
+	 */
+	@Override
+	protected boolean supportsInstalledModelsQuery() {
+		return true;
 	}
 	
 		
@@ -582,13 +596,7 @@ public class LMStudioLLMService extends OpenAILLMService {
 	 * String representation of the This service instance.
 	 */
 	public String toString() {
-		StringBuilder sb = new StringBuilder(256);
-		sb.append("LMStudioService using base URL: ")
-		.append(getLLMConfig().getBaseUrl())
-		.append(",\n\t Default Completion Model: ")
-		.append(getDefaultCompletionModelName())
-		.append(",\n\t Default Embedding Model: ")
-		.append(getDefaultEmbeddingModelName());		
-		return sb.toString();
+		return String.format("LMStudioService using base URL: %s,\n\t Default Completion Model: %s,\n\t Default Embedding Model: %s",
+			getLLMConfig().getBaseUrl(), getDefaultCompletionModelName(), getDefaultEmbeddingModelName());
 	}
 }
