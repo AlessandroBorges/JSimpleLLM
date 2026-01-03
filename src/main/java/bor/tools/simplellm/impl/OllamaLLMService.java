@@ -9,7 +9,6 @@ import bor.tools.simplellm.MapModels;
 import bor.tools.simplellm.Model;
 import bor.tools.simplellm.ModelEmbedding;
 import bor.tools.simplellm.SERVICE_PROVIDER;
-import bor.tools.simplellm.exceptions.LLMException;
 
 /**
  * Implementation of the LLMProvider interface for Ollama's local Large Language

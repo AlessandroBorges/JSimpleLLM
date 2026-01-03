@@ -432,7 +432,7 @@ class LMStudioMultiEmbeddingsTest extends LMStudioLLMServiceTestBase {
 	/**
 	 * Helper method to calculate cosine similarity between two embedding vectors.
 	 */
-	private double cosineSimilarity(float[] vectorA, float[] vectorB) {
+	protected double cosineSimilarity(float[] vectorA, float[] vectorB) {
 		if (vectorA.length != vectorB.length) {
 			throw new IllegalArgumentException("Vectors must have the same length");
 		}

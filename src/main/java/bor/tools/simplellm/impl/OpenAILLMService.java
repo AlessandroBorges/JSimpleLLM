@@ -98,7 +98,7 @@ public class OpenAILLMService implements LLMProvider {
 	                        + "If you don't know the answer, just say that you don't know. "
 	                        + "Don't try to make up an answer.";
 
-	protected static final String DEFAULT_COMPLETION_MODEL = "gpt-4.1-mini";
+	protected static final String DEFAULT_COMPLETION_MODEL = "gpt-5.1-mini";
 	protected static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small";
 
 	private static final LLMConfig defaultLLMConfig;
