@@ -110,15 +110,14 @@ public class OpenAILLMService implements LLMProvider {
 		            new ModelEmbedding("text-embedding-3-small",
 		                               "3-small", 
 		                               8000, 
-		                               3072,
+		                               1536,
 		                               EMBEDDING, EMBEDDING_DIMENSION, BATCH);
 		
 		Model text_emb_3_large =
 		            new ModelEmbedding("text-embedding-3-large",
 		                               "3-large", 
 		                               8000,
-		                               3072
-		                               ,
+		                               3072,
 		                               EMBEDDING, EMBEDDING_DIMENSION, BATCH);
 		
 		Model text_emb_2_ADA   = new ModelEmbedding("text-embedding-ada-002",
@@ -418,6 +417,7 @@ public class OpenAILLMService implements LLMProvider {
 		                    installedModelsCache = new MapModels();
 		                } else 
 		                	installedModelsCache.clear();
+					 
 					MapModels newData = loadInstalledModels();
 					installedModelsCache.putAll(newData);
 					newData.clear();
@@ -1626,7 +1626,20 @@ public class OpenAILLMService implements LLMProvider {
 			}
 		}
 		
-		// @TODO fix the modelObj - it may fail if modelObj is not a String
+		if(!(modelObj instanceof ModelEmbedding) && (modelObj instanceof Model )) {
+			Model tempModel = (Model) modelObj;
+			if(!isModelType(tempModel, EMBEDDING)) {
+				throw new LLMException("Embeddings not supported for model "
+							+ tempModel
+							+ ". Use a dedicated embedding model like text-embedding-3-small, snowflake, gte, nomic, etc.");
+			} else {
+				modelObj = new ModelEmbedding(tempModel.getName(),
+				                              Integer.valueOf(2048),
+				                              Integer.valueOf(1024), 
+				                              tempModel.getTypes().toArray(new Model_Type[0]));
+			}
+		}
+		
 		var model = modelObj instanceof ModelEmbedding ? 
 					(ModelEmbedding) modelObj 
 					: getLLMConfig().getRegisteredModel(modelObj.toString());

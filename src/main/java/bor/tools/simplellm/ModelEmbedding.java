@@ -91,7 +91,7 @@ public class ModelEmbedding extends Model {
 	 * 1024, 2048, or higher depending on the model's architecture and training.
 	 * </p>
 	 */
-	private int embeddingDimension = 1024;
+	private Integer embeddingDimension = 1024;
 		
 
 	/**
@@ -104,13 +104,14 @@ public class ModelEmbedding extends Model {
 
 	/**
 	 * Parameterized constructor for creating an embedding model with specified properties.
-	 * @param name
-	 * @param contextLength
-	 * @param model_types
+	 * @param modelName - the name of the model
+	 * @param contextLength - the context length of the model
+	 * @param dimensions - the embedding dimensions of the model
+	 * @param model_types - the types of the model
 	 */
-	public ModelEmbedding(String name, Integer contextLength, Integer dimensions, Model_Type... model_types) {
-		super(name, contextLength, model_types);
-		this.embeddingDimension = dimensions;
+	public ModelEmbedding(String modelName, Integer contextLength, Integer dimensions, Model_Type... model_types) {
+		super(modelName, contextLength, model_types);
+		this.embeddingDimension = dimensions==null ? 1024 : dimensions;
 		this.checkEmbeddingSet();
 	}
 

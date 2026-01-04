@@ -142,7 +142,7 @@ public class LMStudioLLMService extends OpenAILLMService {
 	protected static final String[] REASONING_MODELS = {"qwen3", "gpt-oss", "gemma"};
 
 	protected static final String DEFAULT_COMPLETION_NAME = "qwen3-1.7b";
-	protected static final String DEFAULT_EMBEDDING_NAME = "snowflake";
+	protected static final String DEFAULT_EMBEDDING_NAME = "nomic-embed-text";
 
 	static {
 		MapModels map = new MapModels();
@@ -168,16 +168,26 @@ public class LMStudioLLMService extends OpenAILLMService {
 		Model llava_7b = new Model("llava-1.5-7b", "llava-7b", 8096, LANGUAGE, VISION);
 
 		// Embedding models (if user has loaded embedding models		
-		ModelEmbedding snowflake   = new ModelEmbedding("text-embedding-snowflake-arctic-embed-l-v2.0",
+		ModelEmbedding snowflakeEmb   = new ModelEmbedding("text-embedding-snowflake-arctic-embed-l-v2.0",
 		            "snowflake",
 		            8192,
 		            1024,
 		            EMBEDDING,
 		            EMBEDDING_DIMENSION);
 		
-		ModelEmbedding nomic     =
+		ModelEmbedding nomicEmb     =
 		            new ModelEmbedding("text-embedding-nomic-embed-text-v1.5@q8_0", "nomic",
 		                               8192,
+		                               768,
+		                               EMBEDDING, EMBEDDING_DIMENSION);
+		ModelEmbedding qwenEmb     =
+		            new ModelEmbedding("text-embedding-qwen3-embedding-0.6b", "qwen-emb",
+		                               8192,
+		                               1024,
+		                               EMBEDDING, EMBEDDING_DIMENSION);
+		ModelEmbedding gemmaEmb     =
+		            new ModelEmbedding("text-embedding-embeddinggemma-300m-qat", "gemma-emb",
+		                               2048,
 		                               768,
 		                               EMBEDDING, EMBEDDING_DIMENSION);
 
@@ -190,8 +200,10 @@ public class LMStudioLLMService extends OpenAILLMService {
 		map.add(phi3_5_mini);
 		map.add(llava_7b);
 		
-		map.add(snowflake);
-		map.add(nomic);
+		map.add(snowflakeEmb);
+		map.add(nomicEmb);
+		map.add(qwenEmb);
+		map.add(gemmaEmb);
 
 		// Make the defaultModelMap unmodifiable
 		defaultModelMap = map;

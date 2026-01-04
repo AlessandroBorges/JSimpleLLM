@@ -40,7 +40,7 @@ public class OllamaLLMService extends LMStudioLLMService {
 	private static final LLMConfig defaultLLMConfig;
 
 	private static final String DEFAULT_MODEL = "qwen3-1.7b";
-	private static final String DEFAULT_EMBEDDING_MODEL = "Definity/snowflake-arctic-embed-l-v2.0-q8_0";
+	private static final String DEFAULT_EMBEDDING_MODEL = "nomic-embed-text";
 
 	static {
 		MapModels map = new MapModels();
@@ -50,10 +50,11 @@ public class OllamaLLMService extends LMStudioLLMService {
 		// nomic-embed-text:latest
 		Model snowflake  = new ModelEmbedding("snowflake-arctic-embed2", "snowflake", 8192,1024, EMBEDDING, EMBEDDING_DIMENSION);
 		Model nomic      = new ModelEmbedding("nomic-embed-text", "nomic", 2048,768, EMBEDDING, EMBEDDING_DIMENSION);
-		Model gemma      = new ModelEmbedding("embeddinggemma", "embeddinggemma", 8192,768, EMBEDDING, EMBEDDING_DIMENSION);
+		Model gemma      = new ModelEmbedding("embeddinggemma", "embeddinggemma", 2048,768, EMBEDDING, EMBEDDING_DIMENSION);
+		Model qwenEmb    = new ModelEmbedding("qwen3-embedding:0.6b", "qwen-emb", 2048,1024, EMBEDDING, EMBEDDING_DIMENSION);
 		
-		Model qwen3_17b   = new Model("qwen3:1.7b", "qwen3-1.7b", 8192, LANGUAGE);
-		Model phi4_mini  = new Model("kwangsuklee/phi4-mini-inst-q5-250228", "phi4-mini", 16000, LANGUAGE);
+		Model qwen3_17b   = new Model("qwen3:1.7b-q8_0", "qwen3-1.7b", 8192, LANGUAGE);
+		Model phi4_mini   = new Model("kwangsuklee/phi4-mini-inst-q5-250228", "phi4-mini", 16000, LANGUAGE);
 
 		map.add(qwen3_17b);
 		map.add(phi4_mini);		
@@ -61,6 +62,7 @@ public class OllamaLLMService extends LMStudioLLMService {
 		map.add(snowflake);
 		map.add(nomic);
 		map.add(gemma);
+		map.add(qwenEmb);
 
 		defaultLLMConfig = LLMConfig.builder()
 		            .apiTokenEnvironment("OLLAMA_API_KEY")

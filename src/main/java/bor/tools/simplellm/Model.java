@@ -84,15 +84,15 @@ public class Model {
 	 * type list with the provided model types.
 	 * </p>
 	 * 
-	 * @param name          the name of the model (must not be null)
+	 * @param modelName          the name of the model (must not be null)
 	 * @param contextLength the maximum context length for this model
 	 * @param types         variable arguments of model types this model supports
 	 * 
 	 * @see Model_Type
 	 */
-	public Model(String name, Integer contextLength, Model_Type... model_types) {
+	public Model(String modelName, Integer contextLength, Model_Type... model_types) {
 		this();
-		this.name = name;
+		this.name = modelName;
 		this.contextLength = contextLength;
 		if (model_types != null) {
 			for (var mt : model_types) {
@@ -108,16 +108,16 @@ public class Model {
 	 * type list with the provided model types.
 	 * </p>
 	 * 
-	 * @param name          the name of the model (must not be null)
+	 * @param modelName          the name of the model (must not be null)
 	 * @param alias         a nickname or alias for the model
 	 * @param contextLength the maximum context length for this model
 	 * @param types         variable arguments of model types this model supports
 	 * 
 	 * @see Model_Type
 	 */	
-	public Model(String name, String alias, Integer contextLength, Model_Type... model_types) {
+	public Model(String modelName, String alias, Integer contextLength, Model_Type... model_types) {
 		this();
-		this.name = name;
+		this.name = modelName;
 		this.alias = alias.toLowerCase();
 		this.contextLength = contextLength;
 		if (model_types != null) {

@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import bor.tools.simplellm.CompletionResponse;
 import bor.tools.simplellm.MapParam;
 import bor.tools.simplellm.Model;
+import bor.tools.simplellm.ModelEmbedding;
 import bor.tools.simplellm.Model_Type;
 import bor.tools.simplellm.Reasoning_Effort;
 import bor.tools.simplellm.Utils;
@@ -39,6 +40,11 @@ import bor.tools.simplellm.exceptions.LLMException;
  */
 public class OpenAIJsonMapper {
 
+	/**
+	 * Default embedding dimensions if not specified
+	 */
+	private Integer DEFAULT_EMBEDDING_DIMENSIONS = 768;
+	
 	private final ObjectMapper objectMapper;
 
 	public OpenAIJsonMapper() {
@@ -450,8 +456,29 @@ public class OpenAIJsonMapper {
 					
 					// Use ModelFeatureDetector for sophisticated capability detection
 					List<Model_Type> detectedTypes = ModelFeatureDetector.detectCapabilities(id, modelData);
+					Model model = null;
+					if(detectedTypes.isEmpty()) {
+						// Fallback to basic type detection
+						if (id.toLowerCase().contains("embed")) {
+							detectedTypes.add(Model_Type.EMBEDDING);
+						} else if (id.toLowerCase().contains("code")) {
+							detectedTypes.add(Model_Type.CODING);
+						} else {
+							detectedTypes.add(Model_Type.LANGUAGE);
+							detectedTypes.add(Model_Type.TEXT);
+						}
+						
+					}
 					
-					Model model = new Model(id, contextLength, detectedTypes.toArray(new Model_Type[0]));
+					if(detectedTypes.contains(Model_Type.EMBEDDING) ){ 
+						model = new ModelEmbedding(id,						                           
+						                           contextLength,
+						                           DEFAULT_EMBEDDING_DIMENSIONS,
+						                           detectedTypes.toArray(new Model_Type[0]));	
+						
+					} else {
+						model = new Model(id, contextLength, detectedTypes.toArray(new Model_Type[0]));
+					}
 					models.put(id, model);
 				}
 			}
